@@ -1,13 +1,45 @@
 import React, { useState } from 'react';
-import { Layout, Steps, Form, Input, Select, Button, message, Space } from 'antd';
-import { DatabaseOutlined, UserOutlined, ExperimentOutlined } from '@ant-design/icons';
-
+import { Layout, Steps, Form, Input, Select, Button, message, Space, List} from 'antd';
+import { DatabaseOutlined, UserOutlined, ExperimentOutlined, UserAddOutlined} from '@ant-design/icons';
+import Confetti from 'react-confetti';
 
 const { Header, Content, Footer } = Layout;
 const { Step } = Steps;
 const { Option } = Select;
 
 function Home() {
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [recycle, setRecycle] = useState(true);
+  const handleShowConfetti = () => {
+    setShowConfetti(true);
+    setRecycle(true); // Permitir que las partículas aparezcan
+    setTimeout(() => setRecycle(false), 1500); // Detener gradualmente después de 3 segundos
+    setTimeout(() => setShowConfetti(false), 3000); // Ocultar el componente completamente después de 6 segundos
+  };
+
+  //laboratorios
+  const laboratorios = [
+    {
+      id: 1,
+      nombre: 'Laboratorio 1',
+      investigador: 'Investigador 1',
+    }
+  ];
+  const [searchTerm, setSearchTerm] = useState(''); // Para almacenar el término de búsqueda
+  const [filteredLabs, setFilteredLabs] = useState(laboratorios); // Para almacenar los resultados filtrados
+
+  // Filtra los laboratorios en base al término ingresado
+  const handleSearch = (e) => {
+    const term = e.target.value.toLowerCase();
+    setSearchTerm(term);
+    setFilteredLabs(
+      laboratorios.filter((lab) =>
+        lab.nombre.toLowerCase().includes(term) // Filtra por nombre del laboratorio
+      )
+    );
+  };
+  //
+
   const [currentStep, setCurrentStep] = useState(0);
   const [form] = Form.useForm();
 
@@ -25,7 +57,8 @@ function Home() {
   const prev = () => setCurrentStep(currentStep - 1);
 
   const finish = () => {
-    message.success('Configuration Complete!');
+    //message.success('Configuration Complete!');
+    handleShowConfetti();
   };
 
   const steps = [
@@ -176,11 +209,11 @@ function Home() {
         </div>
   
         {/* Formulario */}
-  {/* AGREGAR UN BUSCADOR DE LABORATORIO*/}
         <Form.Item
           label="Agregar laboratorio"
           name="labname"
           rules={[{ required: false, message: 'Por favor completa este campo' }]}
+          style={{marginTop: '10px'}}
         >
           <Input placeholder="Ingresa el nombre del laboratorio" />
         </Form.Item>
@@ -191,6 +224,41 @@ function Home() {
         >
           <Input placeholder="Ingresa el nombre del investigador" />
         </Form.Item>
+        <Button type="default" style={{ marginTop: '-15px' }} onClick={prev}>
+          Agregar
+        </Button>
+
+        <div
+            style={{
+              borderTop: '1px solid #b9b9b9',
+              marginTop: '20px',
+              width: '100%',
+              marginBottom: '10px',
+            }}
+          ></div>
+          
+  {/* AGREGAR UN BUSCADOR DE LABORATORIO*/}
+  <Form.Item label="Buscar laboratorio" name="searchLab" rules={[{ required: false }]} style={{marginTop:'20px'}}>
+        <Input
+          placeholder="Buscar laboratorio por nombre"
+          value={searchTerm}
+          onChange={handleSearch}
+        />
+      </Form.Item>
+ <List
+        bordered
+        dataSource={filteredLabs}
+        style={{ marginTop: '-10px', marginBottom: '20px' }}
+        renderItem={(item) => (
+          <List.Item key={item.id}>
+            <div>
+              <strong>{item.nombre}</strong> - {item.investigador}
+            </div>
+          </List.Item>
+        )}
+      />
+
+       
 
   
         <Button type="default" style={{ marginRight: '10px' }} onClick={prev}>
@@ -211,7 +279,7 @@ function Home() {
         {/* Título con icono de base de datos */}
         <div style={{ marginBottom: '20px', textAlign: 'center' }}>
           <h2 style={{ marginBottom: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <ExperimentOutlined style={{ fontSize: '24px', marginRight: '8px' }} />
+            <UserAddOutlined style={{ fontSize: '24px', marginRight: '8px' }} />
             Agregar usuarios
           </h2>
           <div
@@ -228,28 +296,46 @@ function Home() {
         </div>
   
         {/* Formulario */}
-  {/* AGREGAR UN BUSCADOR DE LABORATORIO*/}
+  {/* AGREGAR UN combobox DE LABORATORIO*/}
+  <Form.Item
+          label="Laboratorio"
+          name="labName"
+          rules={[{ required: false, message: 'Por favor completa este campo' }]}
+        >
+  <Select placeholder="Selecciona un laboratorio" style={{width:'100%', marginBottom:'10px'}}>
+          <Option value="opcion1">Opción 1</Option>
+          <Option value="opcion2">Opción 2</Option>
+          <Option value="opcion3">Opción 3</Option>
+        </Select>
+        </Form.Item>
         <Form.Item
-          label="Agregar laboratorio"
+          label="Usuario"
           name="labname"
           rules={[{ required: false, message: 'Por favor completa este campo' }]}
         >
-          <Input placeholder="Ingresa el nombre del laboratorio" />
+          <Input placeholder="Ingresa el nombre de usuario" />
         </Form.Item>
         <Form.Item
-          label="Investigador"
-          name="invname"
+          label="Contraseña"
+          name="password"
           rules={[{ required: false, message: 'Por favor completa este campo' }]}
         >
-          <Input placeholder="Ingresa el nombre del investigador" />
+          <Input.Password placeholder="Ingresa la contraseña" />
         </Form.Item>
-
+        <Button type="default" style={{ marginTop: '-15px' }} onClick={prev}>
+          Agregar
+        </Button>
+        
+        <p style={{ marginBottom: '20px', color:'#272727'}}>
+            Recuerda que después podrás agregar más usuarios desde la aplicación.
+          </p>
+          
   
         <Button type="default" style={{ marginRight: '10px' }} onClick={prev}>
           Regresar
         </Button>
-        <Button type="primary" onClick={next}>
-          Continuar
+        <Button type="primary" onClick={finish}>
+          Finalizar
         </Button>
       </Form>
       
@@ -258,7 +344,7 @@ function Home() {
   ];
 
   return (
-    <Layout >
+    <Layout style={{width:'100%', height: '100vh', margin: '0px', padding: '0px'}} >
       <Header style={{ color: 'white', textAlign: 'center', fontSize: '20px' }}>
         Configuration Wizard
       </Header>
@@ -273,24 +359,16 @@ function Home() {
             {steps[currentStep].content}
           </div>
         </div>
-        <div style={{ marginTop: '20px', textAlign: 'right' }}>
-          {currentStep > 0 && (
-            <Button style={{ marginRight: '10px' }} onClick={prev}>
-              Previous
-            </Button>
-          )}
-          {currentStep < steps.length - 1 && (
-            <Button type="primary" onClick={next}>
-              Next
-            </Button>
-          )}
-          {currentStep === steps.length - 1 && (
-            <Button type="primary" onClick={finish}>
-              Finish
-            </Button>
-          )}
-        </div>
+
       </Content>
+      {showConfetti && (
+        <Confetti
+        
+          recycle={recycle} // Controlar si las partículas se reciclan
+          numberOfPieces={300} // Número inicial de partículas
+          gravity={0.2} // Gravedad para caída más lenta
+        />
+      )}
       <Footer style={{ textAlign: 'center' }}>ReplacedSpace17 - Axiom</Footer>
     </Layout>
   );
