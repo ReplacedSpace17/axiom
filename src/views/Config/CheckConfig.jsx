@@ -38,7 +38,7 @@ const CheckConfiguration = () => {
         clearInterval(timer); // Detener el temporizador
         setLoadingComplete(true); // Cambiar el estado del spinner
         message.success('Configuration Complete!');
-        setTimeout(() => navigate('/'), 2000); // Redirigir después de 2 segundos
+        setTimeout(() => navigate('/setup'), 2000); // Redirigir después de 2 segundos
       }
     }, 5000 / steps.length); // Dividir el tiempo total entre el número de pasos
 

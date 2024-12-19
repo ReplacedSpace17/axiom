@@ -5,7 +5,7 @@ import viteLogo from '/vite.svg';
 
 
 // Importa las páginas que creaste
-import Home from './views/Home/Home';
+import SetUp from './views/Config/SetUp';
 
 //Importar la configuración de la aplicación
 import CheckConfiguration from './views/Config/CheckConfig';
@@ -16,7 +16,8 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<SetUp />} />
+        <Route path="/setup" element={<SetUp />} />
         <Route path="/check-configuration" element={<CheckConfiguration />} />
         
       </Routes>
