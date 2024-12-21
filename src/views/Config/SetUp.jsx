@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
-
 import { Layout, Steps, Form, Input, Select, Button, message, Space, List} from 'antd';
-import { DatabaseOutlined, UserOutlined, ExperimentOutlined, UserAddOutlined} from '@ant-design/icons';
+import { DatabaseOutlined, UserOutlined, ExperimentOutlined, UserAddOutlined, BankOutlined} from '@ant-design/icons';
 import Confetti from 'react-confetti';
 import BACKEND from '../../config/backend';
 import axios from 'axios';
+import { use } from 'react';
+import { useNavigate } from 'react-router-dom';  // Importa useNavigate
 
+//imports de antd
 const { Header, Content, Footer } = Layout;
 const { Step } = Steps;
 const { Option } = Select;
 
+//Función para configurar la aplicación
 function SetUp() {
+  const navigate = useNavigate();  // Inicializa el hook useNavigate
 
 
   //-------------------------------------------------------- Stage BASE DE DATOS (1) --------------------------------------------------------
@@ -43,8 +47,6 @@ function SetUp() {
       else{
         message.success('No se pudo realizar la conexión');
       }
-      
-      console.log('Respuesta:', response.status);
     } catch (error) {
       // Manejar el error
       console.error('Error en la solicitud:', error);
@@ -87,37 +89,40 @@ function SetUp() {
   const [superPassword, setSuperPassword] = useState('');
   const [superPassword2, setSuperPassword2] = useState('');
  
-
   //Function para crear la cuenta de super usuario
   const createAccount = async () => {
-    console.log('Usuario:', superUser);
-    console.log('Contraseña:', superPassword);
-    console.log('Contraseña2:', superPassword2);
-
     //validar que los passwords sean iguales
     if(superPassword == superPassword2){
       try {
         const data = {
           username: superUser,
-          password: superPassword
+          password: superPassword,
         };
         const response = await axios.post(BACKEND + '/config/set/superuser', data, {
           headers: {
             'Content-Type': 'application/json',
-          }
+          },
         });
-        if(response.status === 200){
-          message.success('Cuenta de super usuario creada');
+        if (response.status === 200) {
+          message.success('Cuenta de superusuario creada exitosamente.');
           next();
+        } else {
+          message.error('No se pudo crear la cuenta de superusuario.');
         }
-        else{
-          message.success('No se pudo crear la cuenta de super usuario');
+      } catch (error) {
+        // Manejar el error según el código de respuesta del servidor
+        if (error.response) {
+          if (error.response.status === 409) {
+            message.warning('Ya existe un superusuario con este nombre de usuario.');
+          } else {
+            message.error(
+              `Error del servidor (${error.response.status}): ${error.response.data.message || 'No se pudo crear la cuenta de superusuario.'}`
+            );
+          }
+        } else {
+          console.error('Error en la solicitud:', error);
+          message.error('Error de conexión al servidor.');
         }
-      }
-      catch (error) {
-        // Manejar el error
-        console.error('Error en la solicitud:', error);
-        message.error('No se pudo crear la cuenta de super usuario.');
       }
     }
     else{
@@ -129,118 +134,187 @@ function SetUp() {
   const [laboratorio, setLaboratorio] = useState('');
   const [investigador, setInvestigador] = useState('');
   const [listLabs, setListLabs] = useState([]);
+  const [btnContinue_lab, setBtnContinue] = useState(false);
 
-  useEffect(() => {
-    console.log('Lista de laboratorios actualizada:', listLabs);
-  }, [listLabs]);
-
-
-  //Function para agregar un laboratorio
+  // Function para agregar un laboratorio
   const createLab = async () => {
     const data = {
       nombre: laboratorio,
       investigador: investigador,
     };
-  
+
+    // Validar si los campos 'laboratorio' o 'investigador' están vacíos
+    if (!laboratorio || !investigador) {
+      message.error('Debe agregar información en los campos "laboratorio" e "investigador".');
+      return; // Detener la ejecución si algún campo está vacío
+    }
+
     try {
       const response = await axios.post(BACKEND + '/config/set/laboratory', data, {
         headers: {
           'Content-Type': 'application/json',
         },
       });
-  
+
       if (response.status === 200) {
-        setListLabs(data); // Agrega el nuevo laboratorio a la lista existente
-        setFilteredLabs((prevLabs) => [...prevLabs, data]);
-        console.log('Lista de laboratorios:', listLabs);
-        
+        // Obtener la respuesta del servidor
+        const labData = response.data.laboratorio;
+        setListLabs((prevLabs) => [...prevLabs, labData]); // Agrega el nuevo laboratorio a la lista existente
+        setFilteredLabs((prevLabs) => [...prevLabs, labData]);
         message.success('Laboratorio agregado exitosamente');
-        //handleReset();
+        setBtnContinue(true);
       } else {
         message.error('No se pudo crear el laboratorio, revisa los datos');
       }
     } catch (error) {
-      console.error('Error en la solicitud:', error);
-      message.error('No se pudo crear el laboratorio');
+      // Manejar el error según el código de respuesta del servidor
+      if (error.response) {
+        if (error.response.status === 409) {
+          message.warning('Ya existe un laboratorio con este nombre.');
+        } else {
+          message.error(
+            `Error del servidor (${error.response.status}): ${error.response.data.message || 'No se pudo crear el laboratorio.'}`
+          );
+        }
+      } else {
+        console.error('Error en la solicitud:', error);
+        message.error('Error de conexión al servidor.');
+      }
     }
   };
-  
-  const handleReset = () => {
-    setLaboratorio('');  // Resetea el valor a blanco
-    setInvestigador(''); // Resetea el valor a blanco
-    //imprimir
-    console.log('Laboratorio:', laboratorio);
-    console.log('Investigador:', investigador);
-  };
-  
 
-  //Function para obtener la lista de laboratorios
-  const getListLabs = async () => {
-    //validar que los passwords sean iguales
+  //-------------------------------------------------------- Stage Usuarios(4) --------------------------------------------------------
+  // Use listLabs para mostrar los laboratorios en el combobox
+  const [selectedLabId, setSelectedLabId] = useState(null); // Para almacenar el ID del laboratorio seleccionado
+  const [btnContinue_user, setBtnContinue_user] = useState(false);
+  const [userNameLab, setUserNameLab] = useState('');
+  const [passwordLab, setPasswordLab] = useState('');
+
+  // Function para agregar un usuario a un laboratorio
+  const createUsersToLab = async () => {
+    const data = {
+      username: userNameLab,
+      password: passwordLab,
+      lab_id: selectedLabId,
+    };
+
+    // Validar si los campos 'userNameLab', 'passwordLab' o 'selectedLabId' están vacíos
+    if (!userNameLab || !passwordLab || !selectedLabId) {
+      message.error('Debe agregar información en los campos "usuario", "contraseña" y seleccionar un laboratorio.');
+      return; // Detener la ejecución si algún campo está vacío
+    }
+
     try {
-
-      const response = await axios.get(BACKEND + '/config/get/laboratories', {
+      const response = await axios.post(BACKEND + '/config/set/user', data, {
         headers: {
           'Content-Type': 'application/json',
-        }
+        },
       });
-      if(response.status === 200){
-        setListLabs(response.data.laboratories);
-        //setFilteredLabs(response.data.laboratories);
-        console.log('Lista de laboratorios:', listLabs);
-        setFilteredLabs(listLabs);
-        
-        //console.log('Lista de laboratorios:', listLabs);
+
+      if (response.status === 200) {
+        // Obtener la respuesta del servidor
+        const mensaje = response.data.message;
+        message.success(mensaje);
+        setBtnContinue_user(true);
+      } else {
+        message.error('No se pudo agregar el usuario al laboratorio, revisa los datos');
       }
-      else{
-        message.success('No se pudo crear la cuenta de super usuario');
+    } catch (error) {
+      // Manejar el error según el código de respuesta del servidor
+      if (error.response) {
+        const mensaje = error.response.data.message;
+        message.warning(mensaje);
+        if (error.response.status === 409) {
+          // Manejo para conflictos (por ejemplo, usuario ya existe)
+        } else {
+          message.error(
+            `Error del servidor (${error.response.status}): ${error.response.data.message || 'No se pudo crear el usuario.'}`
+          );
+        }
+      } else {
+        console.error('Error en la solicitud:', error);
+        message.error('Error de conexión al servidor.');
       }
-    }
-    catch (error) {
-      // Manejar el error
-      console.error('Error en la solicitud:', error);
-      message.error('No se pudo crear la cuenta de super usuario.');
     }
   };
-  
+
+  //-------------------------------------------------------- Stage Institute(5) --------------------------------------------------------
+  const [schoolName, setSchoolName] = useState('');
+  const [state, setState] = useState('');
+  const [country, setCountry] = useState('');
+  const [city, setCity] = useState('');
+
+  const addInformationInstitute = async () => {
+      const data = {
+        name: schoolName,
+        city: city,
+        state: state,
+        country: country
+      };
+    
+      // Validar si los campos necesarios están vacíos
+      if (!schoolName || !city || !state || !country) {
+        message.error('Debe agregar información en todos los campos (nombre, ciudad, estado y país).');
+        return; // Detener la ejecución si algún campo está vacío
+      }
+    
+    
+      try {
+        const response = await axios.post(BACKEND + '/config/set/institute', data, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+    
+        if (response.status === 200) {
+          // Obtener la respuesta del servidor
+          const mensaje = response.data.message;
+          message.success(mensaje);
+          finish(); // Llamar a la función de finalización si la solicitud es exitosa
+        } else {
+          message.error('No se pudo crear la institución, revisa los datos');
+        }
+      } catch (error) {
+        // Manejar el error según el código de respuesta del servidor
+        if (error.response) {
+          const mensaje = error.response.data.message;
+          message.warning(mensaje);
+          if (error.response.status === 409) {
+            // Manejo de conflicto si es necesario (por ejemplo, institución ya existe)
+          } else {
+            message.error(
+              `Error del servidor (${error.response.status}): ${error.response.data.message || 'No se pudo crear la institución.'}`
+            );
+          }
+        } else {
+          console.error('Error en la solicitud:', error);
+          message.error('Error de conexión al servidor.');
+        }
+      }
+    };
+
+  //Efectos para terminar la configuración
   const [showConfetti, setShowConfetti] = useState(false);
   const [recycle, setRecycle] = useState(true);
-  const handleShowConfetti = () => {
+
+  //Función para finalizar la configuración
+const handleShowConfetti = () => {
     setShowConfetti(true);
     setRecycle(true); // Permitir que las partículas aparezcan
     setTimeout(() => setRecycle(false), 1500); // Detener gradualmente después de 3 segundos
-    setTimeout(() => setShowConfetti(false), 3000); // Ocultar el componente completamente después de 6 segundos
+    setTimeout(() => {
+      setShowConfetti(false); // Ocultar el componente completamente después de 6 segundos
+      // Redirige a la ruta /login después de 6 segundos
+      navigate('/login');  // Redirige aquí
+    }, 3000); 
   };
 
-
-//--------
-
-
-
-
-//--------
-
-
-
-  const [searchTerm, setSearchTerm] = useState(''); // Para almacenar el término de búsqueda
+  //Generales
   const [filteredLabs, setFilteredLabs] = useState([]); // Para almacenar los resultados filtrados
-
-
-  // Filtra los laboratorios en base al término ingresado
-  const handleSearch = (e) => {
-    const term = e.target.value.toLowerCase();
-    setSearchTerm(term);
-    setFilteredLabs(
-      listLabs.filter((lab) =>
-        lab.nombre.toLowerCase().includes(term) // Filtra por nombre del laboratorio
-      )
-    );
-  };
-  //
-
   const [currentStep, setCurrentStep] = useState(0);
   const [form] = Form.useForm();
 
+  //Función para avanzar en el formulario
   const next = () => {
     form
       .validateFields()
@@ -251,26 +325,19 @@ function SetUp() {
         console.error('Validation failed:', errorInfo);
       });
   };
-
+  //Función para retroceder en el formulario
   const prev = () => setCurrentStep(currentStep - 1);
-
+  //Función para finalizar la configuración
   const finish = () => {
     //message.success('Configuration Complete!');
     handleShowConfetti();
   };
 
-  const msj = () => {
-    message.success('Configuration Complete!');
-    //handleShowConfetti();
-  };
-
   const steps = [
-    {
+    { //-------------------------------------------- Sección de servidor --------------------------------------------
       title: 'Base de datos',
       content: (
         <Form form={form} layout="vertical" style={{ width: '90%', margin: '0 auto', justifyContent: 'center' }}>
-      
-        {/* Título con icono de base de datos */}
         <div style={{ marginBottom: '20px', textAlign: 'center' }}>
           <h2 style={{ marginBottom: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <DatabaseOutlined style={{ fontSize: '24px', marginRight: '8px' }} />
@@ -355,7 +422,7 @@ function SetUp() {
       
       ),
     },
-    {
+    { //-------------------------------------------- Sección de super usuario --------------------------------------------
       title: 'Administrador',
       content: (
         <Form form={form} layout="vertical" style={{ width: '90%', margin: '0 auto', justifyContent: 'center' }}>
@@ -422,7 +489,7 @@ function SetUp() {
       
       ),
     },
-    {
+    { //-------------------------------------------- Sección de laboratorios --------------------------------------------
       title: 'Laboratorios',
       content: (
         <Form form={form} layout="vertical" style={{ width: '90%', margin: '0 auto', justifyContent: 'center' }}>
@@ -468,7 +535,7 @@ function SetUp() {
           onChange={(e) => setInvestigador(e.target.value)}
           placeholder="Ingresa el nombre del investigador" />
         </Form.Item>
-        <Button type="default" style={{ marginTop: '-15px' }} onClick={createLab}>
+        <Button type="default" style={{ marginTop: '-15px' }} onClick={createLab} >
           Agregar
         </Button>
 
@@ -480,21 +547,12 @@ function SetUp() {
               marginBottom: '10px',
             }}
           ></div>
-          
-  {/* AGREGAR UN BUSCADOR DE LABORATORIO*/}
-  
-        <Input
-          placeholder="Buscar laboratorio por nombre"
-          value={searchTerm}
-          onChange={handleSearch}
-          style={{ marginBottom: '20px' }}
-        />
-      
+           
       <List
   bordered
   dataSource={filteredLabs}
   style={{
-    marginTop: '-10px',
+    marginTop: '20px',
     marginBottom: '20px',
     height: '150px', // Establecer un alto fijo
     overflowY: 'auto', // Activar desplazamiento vertical
@@ -520,17 +578,15 @@ function SetUp() {
        
 
   
-        <Button type="default" style={{ marginRight: '10px' }} onClick={prev}>
-          Regresar
-        </Button>
-        <Button type="primary" onClick={next}>
+
+        <Button type="primary" onClick={next} disabled={!btnContinue_lab}>
           Continuar
         </Button>
       </Form>
       
       ),
     },
-    {
+    { //-------------------------------------------- Sección de usuarios --------------------------------------------
       title: 'Usuarios',
       content: (
         <Form form={form} layout="vertical" style={{ width: '90%', margin: '0 auto', justifyContent: 'center' }}>
@@ -561,27 +617,42 @@ function SetUp() {
           name="labName"
           rules={[{ required: false, message: 'Por favor completa este campo' }]}
         >
-  <Select placeholder="Selecciona un laboratorio" style={{width:'100%', marginBottom:'10px'}}>
-          <Option value="opcion1">Opción 1</Option>
-          <Option value="opcion2">Opción 2</Option>
-          <Option value="opcion3">Opción 3</Option>
-        </Select>
+<Select
+  placeholder="Selecciona un laboratorio"
+  style={{ width: '100%', marginBottom: '10px' }}
+  onChange={(value) => {
+    setSelectedLabId(value);
+  }}
+>
+  {listLabs.map((lab) => (
+    <Option key={lab.id} value={lab.id}>
+      {lab.nombre} - {lab.investigador}
+    </Option>
+  ))}
+</Select>
+
         </Form.Item>
         <Form.Item
           label="Usuario"
           name="labname"
           rules={[{ required: false, message: 'Por favor completa este campo' }]}
         >
-          <Input placeholder="Ingresa el nombre de usuario" />
+          <Input 
+          value={userNameLab}
+          onChange={(e) => setUserNameLab(e.target.value)}
+          placeholder="Ingresa el nombre de usuario" />
         </Form.Item>
         <Form.Item
           label="Contraseña"
           name="password"
           rules={[{ required: false, message: 'Por favor completa este campo' }]}
         >
-          <Input.Password placeholder="Ingresa la contraseña" />
+          <Input.Password 
+          value={passwordLab}
+          onChange={(e) => setPasswordLab(e.target.value)}
+          placeholder="Ingresa la contraseña" />
         </Form.Item>
-        <Button type="default" style={{ marginTop: '-15px' }} onClick={prev}>
+        <Button type="default" style={{ marginTop: '-15px' }} onClick={createUsersToLab}>
           Agregar
         </Button>
         
@@ -590,10 +661,88 @@ function SetUp() {
           </p>
           
   
-        <Button type="default" style={{ marginRight: '10px' }} onClick={prev}>
-          Regresar
+    
+        <Button type="primary" onClick={next} disabled={!btnContinue_user}>
+          Continuar
         </Button>
-        <Button type="primary" onClick={finish}>
+      </Form>
+      
+      ),
+    },
+    { //-------------------------------------------- Sección de institución --------------------------------------------
+      title: 'Institución',
+      content: (
+        <Form form={form} layout="vertical" style={{ width: '90%', margin: '0 auto', justifyContent: 'center' }}>
+      
+        {/* Título con icono de base de datos */}
+        <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+          <h2 style={{ marginBottom: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <BankOutlined style={{ fontSize: '24px', marginRight: '8px' }} />
+            Información de la institución
+          </h2>
+          <div
+            style={{
+              borderTop: '1px solid #b9b9b9',
+              marginTop: '10px',
+              width: '100%',
+              marginBottom: '0px',
+            }}
+          ></div>
+          <p style={{ marginBottom: '0', color:'#272727'}}>
+            Agrega la Información de la institución perteneciente.
+          </p>
+        </div>
+  
+        {/* Formulario */}
+  {/* AGREGAR UN combobox DE LABORATORIO*/}
+
+        <Form.Item
+          label="Instituto/Universidad"
+          name="schoolName"
+          rules={[{ required: true, message: 'Por favor completa este campo' }]}
+        >
+          <Input 
+          value={schoolName}
+          onChange={(e) => setSchoolName(e.target.value)}
+          placeholder="Ingresa el nombre del instituto/universidad" />
+        </Form.Item>
+        
+        <Form.Item
+          label="País"
+          name="country"
+          rules={[{ required: true, message: 'Por favor completa este campo' }]}
+        >
+          <Input 
+          value={country}
+          onChange={(e) => setCountry(e.target.value)}
+          placeholder="Ingresa tu país" />
+        </Form.Item>
+        <Form.Item
+          label="Estado/Provincia"
+          name="state"
+          rules={[{ required: true, message: 'Por favor completa este campo' }]}
+        >
+          <Input 
+          value={state}
+          onChange={(e) => setState(e.target.value)}
+          placeholder="Ingresa el nombre del estado/provincia" />
+        </Form.Item>
+        <Form.Item
+          label="Ciudad"
+          name="city"
+          rules={[{ required: true, message: 'Por favor completa este campo' }]}
+        >
+          <Input 
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+          placeholder="Ingresa tu ciudad" />
+        </Form.Item>
+
+        
+      
+  
+    
+        <Button type="primary" onClick={addInformationInstitute} >
           Finalizar
         </Button>
       </Form>
@@ -602,17 +751,19 @@ function SetUp() {
     },
   ];
 
-  return (
-    <Layout style={{width:'100%', height: '100vh', margin: '0px', padding: '0px'}} >
+  return ( 
+    <Layout style={{width:'100vw', height: '100vh', margin: '-10px', padding: '0px'}} >
       <Header style={{ color: 'white', textAlign: 'center', fontSize: '20px' }}>
-        Configuration Wizard
+        Logo
       </Header>
       <Content style={{ padding: '20px', marginTop: '20px' }}>
-        <Steps current={currentStep} style={{ marginBottom: '30px' }}>
-          {steps.map((step, index) => (
-            <Step key={index} title={step.title} />
-          ))}
-        </Steps>
+        <Content style={{width:'100%', marginBottom: '20px', backgroundColor:'none', display: 'flex', flexDirection: 'row', justifyContent:'center', alignContent:'center', alignItems: 'center'}}>
+          <Steps current={currentStep} style={{ backgroundColor:'none', width: '80%'}}>
+            {steps.map((step, index) => (
+              <Step key={index} title={step.title} />
+            ))}
+          </Steps>
+        </Content>
         <div style={{ padding: '20px', borderRadius: '8px', width: '100%', display: 'flex', justifyContent: 'center' }}>
           <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '8px', width: '50%', maxWidth: '450px', minWidth: '350px', border: '1px solid #d4d4d4' }}>
             {steps[currentStep].content}
