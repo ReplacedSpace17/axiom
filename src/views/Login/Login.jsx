@@ -1,101 +1,116 @@
-import React, { useState } from 'react';
-import { Form, Input, Button, Checkbox, message, Row, Col } from 'antd';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { useEffect, useMemo, useState } from "react";
+import Particles, { initParticlesEngine } from "@tsparticles/react";
+// import { loadAll } from "@tsparticles/all"; // if you are going to use `loadAll`, install the "@tsparticles/all" package too.
+// import { loadFull } from "tsparticles"; // if you are going to use `loadFull`, install the "tsparticles" package too.
+import { loadSlim } from "@tsparticles/slim"; // if you are going to use `loadSlim`, install the "@tsparticles/slim" package too.
+// import { loadBasic } from "@tsparticles/basic"; // if you are going to use `loadBasic`, install the "@tsparticles/basic" package too.
 
 const LoginForm = () => {
-  const [loading, setLoading] = useState(false);
+  const [init, setInit] = useState(false);
 
-  const onFinish = async (values) => {
-    setLoading(true);
-    // Simulando un retraso en la validación para la demostración
-    setTimeout(() => {
-      setLoading(false);
-      // Suponiendo que la validación del servidor fue exitosa
-      message.success('¡Ingreso exitoso!');
-      console.log('Login successful:', values);
-    }, 1000);
+  // this should be run only once per application lifetime
+  useEffect(() => {
+    initParticlesEngine(async (engine) => {
+      // you can initiate the tsParticles instance (engine) here, adding custom shapes or presets
+      // this loads the tsparticles package bundle, it's the easiest method for getting everything ready
+      // starting from v2 you can add only the features you need reducing the bundle size
+      //await loadAll(engine);
+      //await loadFull(engine);
+      await loadSlim(engine);
+      //await loadBasic(engine);
+    }).then(() => {
+      setInit(true);
+    });
+  }, []);
+
+  const particlesLoaded = (container) => {
+    console.log(container);
   };
 
-  const onFinishFailed = (errorInfo) => {
-    message.error('Por favor, complete los campos correctamente.');
-  };
-
-  return (
-    <Row justify="center" style={{ minHeight: '100vh', alignItems: 'center' }}>
-      <Col xs={24} sm={16} md={12} lg={8}>
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          <h2>Iniciar Sesión</h2>
-        </div>
-        <Form
-          name="login"
-          initialValues={{
-            remember: true,
-          }}
-          onFinish={onFinish}
-          onFinishFailed={onFinishFailed}
-          layout="vertical"
-        >
-          <Form.Item
-            label="Usuario"
-            name="username"
-            rules={[
-              {
-                required: true,
-                message: 'Por favor ingrese su usuario!',
-              },
-            ]}
-          >
-            <Input
-              prefix={<UserOutlined />}
-              placeholder="Usuario"
-              allowClear
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="Contraseña"
-            name="password"
-            rules={[
-              {
-                required: true,
-                message: 'Por favor ingrese su contraseña!',
-              },
-            ]}
-          >
-            <Input.Password
-              prefix={<LockOutlined />}
-              placeholder="Contraseña"
-              allowClear
-            />
-          </Form.Item>
-
-          <Form.Item>
-            <Form.Item name="remember" valuePropName="checked" noStyle>
-              <Checkbox>Recordarme</Checkbox>
-            </Form.Item>
-            <a href="#" style={{ float: 'right' }}>
-              ¿Olvidaste tu contraseña?
-            </a>
-          </Form.Item>
-
-          <Form.Item>
-            <Button
-              type="primary"
-              htmlType="submit"
-              block
-              loading={loading}
-              style={{
-                backgroundColor: '#1890ff',
-                borderColor: '#1890ff',
-              }}
-            >
-              Iniciar Sesión
-            </Button>
-          </Form.Item>
-        </Form>
-      </Col>
-    </Row>
+  const options = useMemo(
+    () => ({
+      background: {
+        color: {
+          value: "#0d47a1",
+        },
+      },
+      fpsLimit: 120,
+      interactivity: {
+        events: {
+          onClick: {
+            enable: true,
+            mode: "push",
+          },
+          onHover: {
+            enable: true,
+            mode: "repulse",
+          },
+        },
+        modes: {
+          push: {
+            quantity: 4,
+          },
+          repulse: {
+            distance: 200,
+            duration: 0.4,
+          },
+        },
+      },
+      particles: {
+        color: {
+          value: "#ffffff",
+        },
+        links: {
+          color: "#ffffff",
+          distance: 150,
+          enable: true,
+          opacity: 0.5,
+          width: 1,
+        },
+        move: {
+          direction: "none",
+          enable: true,
+          outModes: {
+            default: "bounce",
+          },
+          random: false,
+          speed: 6,
+          straight: false,
+        },
+        number: {
+          density: {
+            enable: true,
+          },
+          value: 80,
+        },
+        opacity: {
+          value: 0.5,
+        },
+        shape: {
+          type: "circle",
+        },
+        size: {
+          value: { min: 1, max: 5 },
+        },
+      },
+      detectRetina: true,
+    }),
+    [],
   );
+
+  if (init) {
+    return (
+      <Particles
+        id="tsparticles"
+        particlesLoaded={particlesLoaded}
+        options={options}
+      />
+    );
+  
+  }
+
+  return <></>;
+  
 };
 
 export default LoginForm;
