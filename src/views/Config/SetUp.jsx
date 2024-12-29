@@ -6,6 +6,7 @@ import BACKEND from '../../config/backend';
 import axios from 'axios';
 import { use } from 'react';
 import { useNavigate } from 'react-router-dom';  // Importa useNavigate
+import '../../assets/colors_palette.css';
 
 //imports de antd
 const { Header, Content, Footer } = Layout;
@@ -40,6 +41,8 @@ function SetUp() {
           'Content-Type': 'application/json',
         }
       });
+      //imprimir a donde se esta haciendo el post
+      console.log(BACKEND + '/config/test/db');
       if(response.status === 200){
         setConnectionStatus(true);
         message.success('Conexión exitosa a la base de datos');

@@ -3,19 +3,25 @@ import Particles, { initParticlesEngine } from "@tsparticles/react";
 
 import { Layout, Form, Input, Button, Checkbox, message, Steps } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
-
+import axios from "axios";
 const { Header, Content, Footer } = Layout;
 const { Step } = Steps;
+import BACKEND from '../../config/backend';
 
 // import { loadAll } from "@tsparticles/all"; // if you are going to use `loadAll`, install the "@tsparticles/all" package too.
 // import { loadFull } from "tsparticles"; // if you are going to use `loadFull`, install the "tsparticles" package too.
 import { loadSlim } from "@tsparticles/slim"; // if you are going to use `loadSlim`, install the "@tsparticles/slim" package too.
 // import { loadBasic } from "@tsparticles/basic"; // if you are going to use `loadBasic`, install the "@tsparticles/basic" package too.
+import logo from '../../assets/logo/logo.svg';
+import '../../assets/colors_palette.css';
+import { useNavigate } from "react-router-dom";
 
 const LoginForm = () => {
   //username y password
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+
+  const navigate = useNavigate();
 
   const [init, setInit] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -24,11 +30,52 @@ const LoginForm = () => {
 
   const onFinish = async (values) => {
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      message.success('¡Ingreso exitoso!');
-      console.log('Login successful:', values);
-    }, 1000);
+    const data = {
+      "username": username,
+      "password": password
+    }
+    try {
+      const response = await axios.post(BACKEND + '/login/user', data, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      if (response.status === 200) {
+        // Obtener la respuesta del servidor
+        const mensaje = response.data.message;
+        message.success(mensaje);
+        setLoading(false);
+        navigate('/admin/home');
+      } else {
+        //message.error('No se pudo hacer el login, revisa los datos');
+      }
+    } catch (error) {
+      // Manejar el error según el código de respuesta del servidor
+      if (error.response) {
+        setLoading(false);
+       
+        if (error.response.status === 401) {
+          // Manejo de conflicto si es necesario (por ejemplo, institución ya existe)
+          message.warning('Usuario o contraseña incorrectos.'); 
+        } else {
+          message.error(
+            `Error del servidor (${error.response.status}): ${error.response.data.message || 'No se pudo crear la institución.'}`
+          );
+        }
+      } else {
+        console.error('Error en la solicitud:', error);
+        //message.error('Error de conexión al servidor.');
+      }
+    }
+    // enviar un request al servidor /login/user
+
+
+ 
+  };
+
+  const onOlvidarContrasena = () => {
+    message.info('Por favor, contacte al administrador del sistema para recuperar su contraseña.');
   };
 
   const onFinishFailed = (errorInfo) => {
@@ -40,9 +87,9 @@ const LoginForm = () => {
     initParticlesEngine(async (engine) => {
       await loadSlim(engine);
     }).then(() => {
-      setInit(true);
+      // Evitar cambios innecesarios en el estado
     });
-  }, []);
+  }, []); // Solo se ejecuta una vez al montar el componente
 
   const particlesLoaded = (container) => {
     console.log(container);
@@ -55,7 +102,7 @@ const LoginForm = () => {
           value: "none",
         },
       },
-      fpsLimit: 120,
+      fpsLimit: 144,
       interactivity: {
         events: {
           onClick: {
@@ -63,8 +110,8 @@ const LoginForm = () => {
             mode: "push",
           },
           onHover: {
-            enable: false,
-            mode: "repulse",
+            enable: true,
+            mode: "grab",
           },
         },
         modes: {
@@ -75,14 +122,17 @@ const LoginForm = () => {
             distance: 200,
             duration: 0.4,
           },
+          grab:{
+            distance: 200,
+          }
         },
       },
       particles: {
         color: {
-          value: "#2b2b2b",
+          value: "#263057",
         },
         links: {
-          color: "#2b2b2b",
+          color: "#263057",
           distance: 150,
           enable: true,
           opacity: 0.5,
@@ -116,7 +166,7 @@ const LoginForm = () => {
       },
       detectRetina: true,
     }),
-    [],
+    [] // Solo se crea una vez
   );
 
   const Login =()=>{
@@ -128,26 +178,36 @@ const LoginForm = () => {
     console.log(data);
   };
 
+  const MemoizedParticles = useMemo(() => (
+    <Particles
+      id="tsparticles"
+      particlesLoaded={particlesLoaded}
+      options={options}
+    />
+  ), [options]);  // Dependiendo de `options`, pero no de `username` o `password`
+  
 
   return (
-    <Layout style={{ width: '100vw', height: '100vh', margin: '-8px', padding: '0px', backgroundColor:'yellow' }}>
-         <Particles
-        id="tsparticles"
-        particlesLoaded={particlesLoaded}
-        options={options}
-      />
+    <Layout style={{ width: '100vw', height: '100vh', margin: '-8px', padding: '0px', backgroundColor:'none' ,
+      backgroundColor: 'rgb(222, 222, 222)', // Fondo semi-transparente
+        backdropFilter: 'blur(390px)', // Aplicar el desenfoque
+        WebkitBackdropFilter: 'blur(500px)',
+    }}>
+        {MemoizedParticles}
+      
+
       <Header style={{ color: 'white', textAlign: 'center', fontSize: '20px', zIndex: 1 }}>
-        Logo
+        Axiom 
       </Header>
       
-      <Content style={{ padding: '20px', marginTop: '20px', backgroundColor:'orange', display:'flex',flexDirection:'column', alignContent:'center', justifyContent:'center'}}>
+      <Content style={{ padding: '20px', marginTop: '20px', backgroundColor:'none', display:'flex',flexDirection:'column', alignContent:'center', justifyContent:'center'}}>
         
         <div
           style={{
-            padding: '20px',
+            padding: '10px',
             display: 'flex',
             justifyContent: 'center',
-            backgroundColor: 'red',
+            backgroundColor: 'none',
           }}
         >
           <div
@@ -158,10 +218,16 @@ const LoginForm = () => {
               width: '50%',
               maxWidth: '400px',
               minWidth: '350px',
-              border: '1px solid #d4d4d4',
+              border: '1px solid #c3c3c3',
               zIndex: 1,
             }}
           >
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <img src={logo} alt="logo" style={{ width: '150px' }} />
+              <p style={{ color: '#212121', fontSize: '16px', marginTop: '2.5em' }}>
+                Por favor, inicie sesión para continuar
+              </p>
+            </div>
             <Form
               name="login"
               initialValues={{
@@ -213,9 +279,12 @@ const LoginForm = () => {
                 <Form.Item name="remember" valuePropName="checked" noStyle>
                   <Checkbox style={{ color: '#7d7d7d' }}>Recordarme</Checkbox>
                 </Form.Item>
-                <a href="#" style={{ float: 'right', color: '#1890ff' }}>
-                  ¿Olvidaste tu contraseña?
-                </a>
+                <a 
+  onClick={onOlvidarContrasena} 
+  style={{ float: 'right', color: '#1890ff', cursor: 'pointer' }}
+>
+  ¿Olvidaste tu contraseña?
+</a>
               </Form.Item>
 
               <Form.Item>
@@ -226,10 +295,11 @@ const LoginForm = () => {
                   onClick={Login}
                   loading={loading}
                   style={{
-                    backgroundColor: '#1890ff',
-                    borderColor: '#1890ff',
+                    backgroundColor: 'var(--primary-color)',
+                    borderColor: 'none',
                     height: '45px',
                     fontSize: '16px',
+                    marginBottom: '-2em',
                   }}
                 >
                   Iniciar Sesión
@@ -239,13 +309,9 @@ const LoginForm = () => {
           </div>
         </div>
       </Content>
-      <Footer style={{ textAlign: 'center' }}>ReplacedSpace17 - Axiom</Footer>
+     
  
-      <Particles
-        id="tsparticles"
-        particlesLoaded={particlesLoaded}
-        options={options}
-      />
+    
       </Layout>
   );
   

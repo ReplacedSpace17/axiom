@@ -1,0 +1,6 @@
+:root {
+    --primary-color: #263057;  /* Definir una variable global */
+    --secondary-color: #212121;
+    --form-color: #f0f2f5;
+    --form-border-color: #c3c3c3;
+  }

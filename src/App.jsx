@@ -11,6 +11,8 @@ import CheckConfiguration from './views/Config/CheckConfig';
 
 import LoginForm from './views/Login/Login';
 
+import HomeAdmin from './views/Admin/Home_Admin';
+
 function App() {
   const [count, setCount] = useState(0);
 
@@ -21,6 +23,7 @@ function App() {
         <Route path="/setup" element={<SetUp />} />
         <Route path="/check-configuration" element={<CheckConfiguration />} />
         <Route path="/login" element={<LoginForm />} />
+        <Route path="/admin/home" element={<HomeAdmin />} />
         
       </Routes>
     </Router>
