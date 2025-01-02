@@ -28,8 +28,10 @@ const LoginForm = () => {
   const [currentStep] = useState(0); // Usado para mantener consistencia con el estilo
   const steps = [{ title: 'Inicio de sesión', content: 'Formulario de acceso' }];
 
+  
   const onFinish = async (values) => {
-    setLoading(true);
+    setLoading(true); //Cambiar el loader1
+    //armar el json
     const data = {
       "username": username,
       "password": password
@@ -46,10 +48,13 @@ const LoginForm = () => {
         const mensaje = response.data.message;
         message.success(mensaje);
         setLoading(false);
+
+        //obatener el token y almacenarlo en cache
+        const token = response.data.token;
+        //almacenar el token en el local storage
+        
         navigate('/admin/home');
-      } else {
-        //message.error('No se pudo hacer el login, revisa los datos');
-      }
+      } 
     } catch (error) {
       // Manejar el error según el código de respuesta del servidor
       if (error.response) {
