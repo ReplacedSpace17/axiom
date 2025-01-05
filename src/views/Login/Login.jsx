@@ -16,6 +16,8 @@ import logo from '../../assets/logo/logo.svg';
 import '../../assets/colors_palette.css';
 import { useNavigate } from "react-router-dom";
 
+import Sessions from '../../utils/Sesions.jsx';
+
 const LoginForm = () => {
   //username y password
   const [username, setUsername] = useState('');
@@ -28,7 +30,7 @@ const LoginForm = () => {
   const [currentStep] = useState(0); // Usado para mantener consistencia con el estilo
   const steps = [{ title: 'Inicio de sesión', content: 'Formulario de acceso' }];
 
-  
+
   const onFinish = async (values) => {
     setLoading(true); //Cambiar el loader1
     //armar el json
@@ -42,7 +44,7 @@ const LoginForm = () => {
           'Content-Type': 'application/json',
         },
       });
-  
+
       if (response.status === 200) {
         // Obtener la respuesta del servidor
         const mensaje = response.data.message;
@@ -51,18 +53,36 @@ const LoginForm = () => {
 
         //obatener el token y almacenarlo en cache
         const token = response.data.token;
+        const userID = response.data.userId;
+        const userRole = response.data.role;
+        const username = response.data.username;
+
+        // Almacenar los datos en localStorage
+        Sessions.setToken(token);
+        Sessions.setUserID(userID);
+        Sessions.setUserRole(userRole);
+        Sessions.setUsername(username);
+
+        console.log('role:', response.data);
         //almacenar el token en el local storage
-        
-        navigate('/admin/home');
-      } 
+        if (userRole === 'superuser') {
+          // Super usuario
+          navigate('/su/home');
+        }
+        if (userRole === 'user') {
+          //usuario normal
+          navigate('/students/home');
+        }
+
+      }
     } catch (error) {
       // Manejar el error según el código de respuesta del servidor
       if (error.response) {
         setLoading(false);
-       
+
         if (error.response.status === 401) {
           // Manejo de conflicto si es necesario (por ejemplo, institución ya existe)
-          message.warning('Usuario o contraseña incorrectos.'); 
+          message.warning('Usuario o contraseña incorrectos.');
         } else {
           message.error(
             `Error del servidor (${error.response.status}): ${error.response.data.message || 'No se pudo crear la institución.'}`
@@ -76,7 +96,7 @@ const LoginForm = () => {
     // enviar un request al servidor /login/user
 
 
- 
+
   };
 
   const onOlvidarContrasena = () => {
@@ -127,7 +147,7 @@ const LoginForm = () => {
             distance: 200,
             duration: 0.4,
           },
-          grab:{
+          grab: {
             distance: 200,
           }
         },
@@ -174,12 +194,13 @@ const LoginForm = () => {
     [] // Solo se crea una vez
   );
 
-  const Login =()=>{
+  const Login = () => {
+
+    //armar el json
     const data = {
       "username": username,
       "password": password
     }
-
     console.log(data);
   };
 
@@ -190,23 +211,24 @@ const LoginForm = () => {
       options={options}
     />
   ), [options]);  // Dependiendo de `options`, pero no de `username` o `password`
-  
+
 
   return (
-    <Layout style={{ width: '100vw', height: '100vh', margin: '-8px', padding: '0px', backgroundColor:'none' ,
+    <Layout style={{
+      width: '100vw', height: '100vh', margin: '-8px', padding: '0px', backgroundColor: 'none',
       backgroundColor: 'rgb(222, 222, 222)', // Fondo semi-transparente
-        backdropFilter: 'blur(390px)', // Aplicar el desenfoque
-        WebkitBackdropFilter: 'blur(500px)',
+      backdropFilter: 'blur(390px)', // Aplicar el desenfoque
+      WebkitBackdropFilter: 'blur(500px)',
     }}>
-        {MemoizedParticles}
-      
+      {MemoizedParticles}
+
 
       <Header style={{ color: 'white', textAlign: 'center', fontSize: '20px', zIndex: 1 }}>
-        Axiom 
+        Axiom
       </Header>
-      
-      <Content style={{ padding: '20px', marginTop: '20px', backgroundColor:'none', display:'flex',flexDirection:'column', alignContent:'center', justifyContent:'center'}}>
-        
+
+      <Content style={{ padding: '20px', marginTop: '20px', backgroundColor: 'none', display: 'flex', flexDirection: 'column', alignContent: 'center', justifyContent: 'center' }}>
+
         <div
           style={{
             padding: '10px',
@@ -284,12 +306,12 @@ const LoginForm = () => {
                 <Form.Item name="remember" valuePropName="checked" noStyle>
                   <Checkbox style={{ color: '#7d7d7d' }}>Recordarme</Checkbox>
                 </Form.Item>
-                <a 
-  onClick={onOlvidarContrasena} 
-  style={{ float: 'right', color: '#1890ff', cursor: 'pointer' }}
->
-  ¿Olvidaste tu contraseña?
-</a>
+                <a
+                  onClick={onOlvidarContrasena}
+                  style={{ float: 'right', color: '#1890ff', cursor: 'pointer' }}
+                >
+                  ¿Olvidaste tu contraseña?
+                </a>
               </Form.Item>
 
               <Form.Item>
@@ -314,12 +336,12 @@ const LoginForm = () => {
           </div>
         </div>
       </Content>
-     
- 
-    
-      </Layout>
+
+
+
+    </Layout>
   );
-  
+
 };
 
 export default LoginForm;

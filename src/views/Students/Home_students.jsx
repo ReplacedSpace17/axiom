@@ -7,7 +7,7 @@ import Sessions from '../../utils/Sesions';
 import { useNavigate } from 'react-router-dom';
 const { Header, Content, Sider } = Layout;
 
-const HomeAdmin = () => {
+const HomeStudents = () => {
   // Estado para verificar si el usuario está logueado
   const [isLogged, setIsLogged] = useState(true);
   const navigate = useNavigate();
@@ -77,7 +77,7 @@ const HomeAdmin = () => {
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <h1>Bienvenido a la Página Principal</h1>
+              <h1>Bienvenido ESTUDIANTE</h1>
               <Button type="primary">Nuevo Evento</Button>
             </div>
             <div style={{ marginTop: '20px' }}>
@@ -94,4 +94,4 @@ const HomeAdmin = () => {
   );
 };
 
-export default HomeAdmin;
+export default HomeStudents;
