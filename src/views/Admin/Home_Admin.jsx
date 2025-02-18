@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Layout, Menu, Breadcrumb, Button } from 'antd';
-import { HomeOutlined, UserOutlined, LaptopOutlined } from '@ant-design/icons';
+import {
+  HomeOutlined, UserOutlined, LaptopOutlined, ExperimentOutlined, BankOutlined,
+  AppstoreAddOutlined
+} from '@ant-design/icons';
 import BACKEND from '../../config/backend';
 import axios from 'axios';
 import Sessions from '../../utils/Sesions';
@@ -18,7 +21,7 @@ const HomeAdmin = () => {
         const validate = await Sessions.validateSession(); // Esperar a que se resuelva la promesa
         setIsLogged(validate);
         //alert(`¿Sesión válida?: ${validate}`);
-        
+
         if (!validate) {
           navigate('/login'); // Redirigir si no está logueado
         }
@@ -33,7 +36,7 @@ const HomeAdmin = () => {
   }, [navigate]);
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ width: '100vw', height: '100vh', margin: '-8px', padding: '0px', }}>
       {/* Header */}
       <Header className="site-layout-background" style={{ padding: 0 }}>
         <div style={{ color: 'white', fontSize: '20px', textAlign: 'center' }}>
@@ -44,29 +47,38 @@ const HomeAdmin = () => {
       {/* Main Layout */}
       <Layout>
         {/* Sider */}
-        <Sider width={200} className="site-layout-background">
+        <Sider width={250} className="site-layout-background">
           <Menu
             mode="inline"
             defaultSelectedKeys={['1']}
-            style={{ height: '100%', borderRight: 0 }}
+            style={{ height: '100%', borderRight: 0, padding: '10px' }}
           >
-            <Menu.Item key="1" icon={<HomeOutlined />}>
+            <Menu.Item key="1" icon={<HomeOutlined />} onClick={() => navigate('/su/home')}>
               Inicio
             </Menu.Item>
-            <Menu.Item key="2" icon={<UserOutlined />}>
-              Perfil
+            <Menu.Item key="2" icon={<AppstoreAddOutlined />} onClick={() => navigate('/laboratorios')}>
+              Mis laboratorios
             </Menu.Item>
-            <Menu.Item key="3" icon={<LaptopOutlined />}>
-              Configuración
+            <Menu.Item key="3" icon={<UserOutlined />} onClick={() => navigate('/estudiantes')}>
+              Estudiantes
             </Menu.Item>
+
+            <Menu.Item key="4" icon={<BankOutlined />} onClick={() => navigate('/institucion')}>
+              Institución
+            </Menu.Item>
+
+            <Menu.Item key="5" icon={<ExperimentOutlined />} onClick={() => navigate('/experimentos')}>
+              Experimentos
+            </Menu.Item>
+
           </Menu>
         </Sider>
 
         {/* Content */}
         <Layout style={{ padding: '0 24px 24px' }}>
           <Breadcrumb style={{ margin: '16px 0' }}>
+            <Breadcrumb.Item>Administrador</Breadcrumb.Item>
             <Breadcrumb.Item>Inicio</Breadcrumb.Item>
-            <Breadcrumb.Item>Tablero</Breadcrumb.Item>
           </Breadcrumb>
           <Content
             style={{

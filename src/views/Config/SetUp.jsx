@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Steps, Form, Input, Select, Button, message, Space, List} from 'antd';
-import { DatabaseOutlined, UserOutlined, ExperimentOutlined, UserAddOutlined, BankOutlined} from '@ant-design/icons';
+import { Layout, Steps, Form, Input, Select, Row, Col, Button, message, Space, List, Tooltip} from 'antd';
+import { DatabaseOutlined, UserOutlined, ExperimentOutlined, UserAddOutlined, BankOutlined,SearchOutlined, QuestionCircleOutlined, ControlOutlined,
+  WalletOutlined
+} from '@ant-design/icons';
 import Confetti from 'react-confetti';
 import BACKEND from '../../config/backend';
 import axios from 'axios';
@@ -273,7 +275,8 @@ function SetUp() {
           // Obtener la respuesta del servidor
           const mensaje = response.data.message;
           message.success(mensaje);
-          finish(); // Llamar a la función de finalización si la solicitud es exitosa
+          next();
+         // finish(); // Llamar a la función de finalización si la solicitud es exitosa
         } else {
           message.error('No se pudo crear la institución, revisa los datos');
         }
@@ -296,6 +299,152 @@ function SetUp() {
       }
     };
 
+
+    //-------------------------------------------------------- Stage Host(6) --------------------------------------------------------
+    // Funciones para manejar las conexiones y pruebas
+const testIPFSConnection = async () => {
+  //hacer un post a /config/ipfs/test del backend con fetch, enviar en el body host: ipfsHost
+  const data = {
+    host: ipfsHost
+  };
+  try {
+    const response = await axios.post(BACKEND + '/config/ipfs/test', data, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    if (response.status === 200) {
+      //mostrar un message
+      message.success('Conexión exitosa con el nodo IPFS');
+      setIpfsConnected(true);
+    } else {
+      setIpfsConnected(false);
+    }
+  } catch (error) {
+    message.error('No se pudo conectar con el nodo IPFS');
+    setIpfsConnected(false);
+  }
+};
+
+//Function test  con axios, testt blockchain controller
+const testBlockchainConnection = async () => {
+  
+  console.log('host blockchain', blockchainHost+'/test');
+  //hacerlo con fetch
+  try {
+    const response = await fetch(blockchainHost+'/test');
+    
+    if (response.ok) {
+      //mostrar un message
+      message.success('Conexión exitosa con el controlador de blockchain');
+      setAlchemyApiKeyVerified(true);
+      //setear el ipfshost y el blockchainHost
+    
+    } else {
+
+      setAlchemyApiKeyVerified(false);
+    }
+  } catch (error) {
+    message.error('No se pudo conectar con el controlador de blockchain');
+    setAlchemyApiKeyVerified(false);
+  }
+
+};
+
+
+
+const verifyHost = () => {
+
+  //verificar que ipfsConnected y blockchainController sean true
+  if(ipfsConnected && blockchainController == false){
+    message.error('No se pudo guardar la configuración en el servidor');
+    return;
+  }
+  // Lógica para finalizar la configuración, como almacenar los datos en el backend o continuar con el flujo.
+  //guardar en el backend /config/host, con en el body host_ipfs y host_blockchain_controller
+  const data = {
+    host_ipfs: ipfsHost,
+    host_blockchain_controller: blockchainHost
+  };
+  axios.post(BACKEND + '/config/host', data, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }).then((response) => {
+    if (response.status === 200) {
+      message.success('Configuración guardada en el servidor');
+      //setear el ipfshost y el blockchainHost
+
+      next();
+    } else {
+      message.error('No se pudo guardar la configuración en el servidor');
+    }
+  }).catch((error) => {
+    console.error('Error en la solicitud:', error);
+    message.error('No se pudo guardar la configuración en el servidor.');
+  });
+};
+
+// Estado para manejar las verificaciones de conexión
+const [ipfsHost, setIpfsHost] = useState('');
+const [ipfsConnected, setIpfsConnected] = useState(false);
+const [blockchainController, setAlchemyApiKeyVerified] = useState(false);
+const [blockchainHost, setBlockchainHost] = useState('');
+//testBlockchainConnection
+
+//----------------------------------------- fWALLET VARIABLES-----------------------------------------
+const [walletPrivateKey, setWalletPrivateKey] = useState('');
+const [walletAddress, setWalletAddress] = useState('');
+const [alchemyApiKey, setAlchemyApiKey] = useState('');
+const [walletConnected, setWalletConnected] = useState(false);
+
+
+//testWallet
+const testWallet = async () => {
+  //verificar que los 3 campos no esten vacios
+  if (!walletPrivateKey || !walletAddress || !alchemyApiKey) {
+    message.error('Por favor completa todos los campos.');
+    return;
+  }
+  //hacer un axios.post a /config/wallet del backend
+  const data = {
+    privateKey: walletPrivateKey,
+    addressWallet: walletAddress,
+    alchemyApiKey: alchemyApiKey
+  };
+  try {
+    const response = await axios.post(BACKEND + '/config/wallet', data, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    if (response.status === 200) {
+      //obtener el response data {message: "Blockchain API funcionando correctamente"}
+      //mostrar un message
+      message.success(response.data.message);
+      setWalletConnected(true);
+    } else {
+      //mostrar el error de el response balance
+      message.success(response.data.message);
+      setWalletConnected(false);
+    }
+  } catch (error) {
+    message.error('No se pudo conectar con la wallet');
+    setWalletConnected(false);
+  }
+};
+//verifyBlockchainSettings
+const verifyBlockchainSettings = () => {
+  // registrar las configuraciones en el backend
+  //finish();
+  //verificar que walletConnected y walletVerified sean true
+  if(walletConnected == false){
+    message.error('No se pudo guardar la configuración en el servidor');
+    return;
+  }
+  finish();
+};
+//----------------------------------------- finalizar configuración -----------------------------------------
   //Efectos para terminar la configuración
   const [showConfetti, setShowConfetti] = useState(false);
   const [recycle, setRecycle] = useState(true);
@@ -337,7 +486,8 @@ const handleShowConfetti = () => {
   };
 
   const steps = [
-    { //-------------------------------------------- Sección de servidor --------------------------------------------
+
+    { //-------------------------------------------- Sección de servidor 1--------------------------------------------
       title: 'Base de datos',
       content: (
         <Form form={form} layout="vertical" style={{ width: '90%', margin: '0 auto', justifyContent: 'center' }}>
@@ -425,7 +575,7 @@ const handleShowConfetti = () => {
       
       ),
     },
-    { //-------------------------------------------- Sección de super usuario --------------------------------------------
+    { //-------------------------------------------- Sección de super usuario 2--------------------------------------------
       title: 'Administrador',
       content: (
         <Form form={form} layout="vertical" style={{ width: '90%', margin: '0 auto', justifyContent: 'center' }}>
@@ -492,7 +642,7 @@ const handleShowConfetti = () => {
       
       ),
     },
-    { //-------------------------------------------- Sección de laboratorios --------------------------------------------
+    { //-------------------------------------------- Sección de laboratorios 3--------------------------------------------
       title: 'Laboratorios',
       content: (
         <Form form={form} layout="vertical" style={{ width: '90%', margin: '0 auto', justifyContent: 'center' }}>
@@ -589,7 +739,7 @@ const handleShowConfetti = () => {
       
       ),
     },
-    { //-------------------------------------------- Sección de usuarios --------------------------------------------
+    { //-------------------------------------------- Sección de usuarios -4-------------------------------------------
       title: 'Usuarios',
       content: (
         <Form form={form} layout="vertical" style={{ width: '90%', margin: '0 auto', justifyContent: 'center' }}>
@@ -672,7 +822,7 @@ const handleShowConfetti = () => {
       
       ),
     },
-    { //-------------------------------------------- Sección de institución --------------------------------------------
+    { //-------------------------------------------- Sección de institución 5--------------------------------------------
       title: 'Institución',
       content: (
         <Form form={form} layout="vertical" style={{ width: '90%', margin: '0 auto', justifyContent: 'center' }}>
@@ -741,17 +891,205 @@ const handleShowConfetti = () => {
           placeholder="Ingresa tu ciudad" />
         </Form.Item>
 
-        
-      
-  
     
         <Button type="primary" onClick={addInformationInstitute} >
-          Finalizar
+          Continuar
         </Button>
       </Form>
       
       ),
     },
+    { //-------------------------------------------- Sección de configuración de IPFS y blockchain (6) --------------------------------------------
+      title: 'IPFS',
+      content: (
+        <Form form={form} layout="vertical" style={{ width: '90%', margin: '0 auto', justifyContent: 'center' }}>
+    
+          {/* Título con icono de base de datos */}
+          <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+            <h2 style={{ marginBottom: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <ControlOutlined style={{ fontSize: '24px', marginRight: '8px' }} />
+              Configuración de controladores
+            </h2>
+            <div
+              style={{
+                borderTop: '1px solid #b9b9b9',
+                marginTop: '10px',
+                width: '100%',
+                marginBottom: '0px',
+              }}
+            ></div>
+            <p style={{ marginBottom: '0', color:'#272727'}}>
+              Configura los parámetros para conectar con IPFS, y el controlador de blockchain.
+            </p>
+          </div>
+    
+          {/* Nodo IPFS Host */}
+          <Form.Item
+            label={
+              <span>
+                Nodo IPFS Host
+                <Tooltip title="Ingresa la IP de tu nodo de IPFS para establecer la conexión.">
+                  <QuestionCircleOutlined style={{ marginLeft: '8px', fontSize: '16px', cursor: 'pointer' }} />
+                </Tooltip>
+              </span>
+            }
+            name="ipfsHost"
+          
+          >
+            <Input
+              placeholder="Ingresa el host de tu nodo IPFS"
+              value={ipfsHost}
+              onChange={(e) => setIpfsHost(e.target.value)}
+            />
+            <Button type="default" style={{ marginTop: '8px' }} onClick={() => testIPFSConnection()} icon={<SearchOutlined />}>
+              Probar Conexión
+            </Button>
+          </Form.Item>
+    
+          {/* Blockchain Controlador Host */}
+          <Form.Item
+            label={
+              <span>
+                Blockchain Controlador Host
+                <Tooltip title="Ingresa la IP de tu controlador blockchain para la conexión. Ejemplo: (127.0.0.1:10000)">
+                  <QuestionCircleOutlined style={{ marginLeft: '8px', fontSize: '16px', cursor: 'pointer' }} />
+                </Tooltip>
+              </span>
+            }
+            name="blockchainHost"
+            
+          >
+            <Input
+              placeholder="Ingresa el host de tu Blockchain"
+              value={blockchainHost}
+              onChange={(e) => setBlockchainHost(e.target.value)}
+            />
+            <Button type="default" style={{ marginTop: '8px' }} onClick={() => testBlockchainConnection()} icon={<SearchOutlined />}>
+              Probar Conexión
+            </Button>
+          </Form.Item>
+    
+          {/* Labels para verificar las conexiones */}
+          <div>
+            <label style={{ color: ipfsConnected ? 'green' : 'gray' }}>
+              {ipfsConnected ? '✅ Nodo de IPFS conectado' : 'Nodo de IPFS no conectado'}
+            </label>
+          </div>
+    
+          <div>
+            <label style={{ color: blockchainController ? 'green' : 'gray' }}>
+              {blockchainController ? '✅ Controlador blockchain conectado' : 'Controlador blockchain no conectado'}
+            </label>
+          </div>
+    
+          {/* Botón Finalizar */}
+          <br/>
+          <Button 
+            type="primary" 
+            onClick={verifyHost} 
+            disabled={!ipfsConnected || !blockchainController}
+          >
+            Continuar
+          </Button>
+        </Form>
+      ),
+    },
+    { //-------------------------------------------- Sección de Wallet (7) --------------------------------------------
+      title: 'Wallet',
+      content: (
+        <Form form={form} layout="vertical" style={{ width: '90%', margin: '0 auto', justifyContent: 'center' }}>
+          
+          {/* Título con icono de configuración */}
+          <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+            <h2 style={{ marginBottom: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <WalletOutlined style={{ fontSize: '24px', marginRight: '8px' }} />
+              Agrega tu Wallet
+            </h2>
+            <div
+              style={{
+                borderTop: '1px solid #b9b9b9',
+                marginTop: '10px',
+                width: '100%',
+                marginBottom: '0px',
+              }}
+            ></div>
+            <p style={{ marginBottom: '0', color:'#272727'}}>
+              Configura los parámetros para conectar con Alchemy y tu wallet. Asegurate de tener por lo menos 1 Matic en tu wallet.
+            </p>
+          </div>
+    
+          {/* API Key de Alchemy */}
+          <Form.Item
+            label={
+              <span>
+                API Key de Alchemy
+                <Tooltip title="Ingresa tu API Key de Alchemy para interactuar con la blockchain." >
+                  <QuestionCircleOutlined style={{ marginLeft: '8px', fontSize: '16px', cursor: 'pointer' }} />
+                </Tooltip>
+              </span>
+            }
+            name="alchemyApiKey"
+            
+          >
+            <Input
+              placeholder="Ingresa tu API Key de Alchemy"
+              value={alchemyApiKey}
+              onChange={(e) => setAlchemyApiKey(e.target.value)}
+            />
+          </Form.Item>
+    
+          {/* Private Key de la Wallet */}
+          <Form.Item
+            label={
+              <span>
+                Private Key de la Wallet
+                <Tooltip title="Ingresa tu Private Key, utilizada para firmar transacciones. Mantén este dato seguro.">
+                  <QuestionCircleOutlined style={{ marginLeft: '8px', fontSize: '16px', cursor: 'pointer' }} />
+                </Tooltip>
+              </span>
+            }
+            name="walletPrivateKey"
+            
+          >
+            <Input.Password
+              placeholder="Ingresa tu Private Key"
+              value={walletPrivateKey}
+              onChange={(e) => setWalletPrivateKey(e.target.value)}
+            />
+          </Form.Item>
+    
+          {/* Dirección de la Wallet */}
+          <Form.Item
+            label={
+              <span>
+                Dirección de la Wallet
+                <Tooltip title="Dirección pública de tu Wallet en la blockchain. De MetaMask, por ejemplo." >
+                  <QuestionCircleOutlined style={{ marginLeft: '8px', fontSize: '16px', cursor: 'pointer' }} />
+                </Tooltip>
+              </span>
+            }
+            name="walletAddress"
+          
+          >
+            <Input
+              placeholder="0x..."
+              value={walletAddress}
+              onChange={(e) => setWalletAddress(e.target.value)}
+            />
+          </Form.Item>
+    
+          {/* Botón de test*/}
+          <Button type="default" style={{ marginTop: '8px' }} onClick={testWallet} icon={<SearchOutlined />}>
+            Probar Conexión
+          </Button>
+          <br/><br/>
+          <Button type="primary" onClick={verifyBlockchainSettings} disabled={!walletConnected}>
+            Finalizar
+          </Button>
+        </Form>
+      ),
+    },
+   
   ];
 
   return ( 
