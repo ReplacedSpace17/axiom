@@ -23,6 +23,8 @@ import Experimentos_home from './views/Admin/Experimentos/Experimentos_home';
 
 // ------------------------------------------------------------- Students
 import HomeStudents from './views/Students/Home_students';
+import HomeExperimentos from './views/Students/Mis_experimentos/Experimentos';
+import Add_Exp from './views/Students/Mis_experimentos/Agregar_EXP/AgregarExp';
 
 function App() {
   const [count, setCount] = useState(0);
@@ -35,7 +37,10 @@ function App() {
         <Route path="/check-configuration" element={<CheckConfiguration />} />
         <Route path="/login" element={<LoginForm />} />
         <Route path="/su/home" element={<HomeAdmin />} />
+
         <Route path="/students/home" element={<HomeStudents />} />
+        <Route path="/students/experiments" element={<HomeExperimentos />} />
+        <Route path="/students/experiments/add" element={<Add_Exp />} />
 
         <Route path="/laboratorios" element={<LaboratoriosAdmin />} />
         <Route path="/laboratorios/add" element={<Lab_add />} />

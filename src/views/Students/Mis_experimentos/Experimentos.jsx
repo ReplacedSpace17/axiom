@@ -1,20 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { Layout, Menu, Breadcrumb, Button } from 'antd';
 import { HomeOutlined, UserOutlined, SearchOutlined, LogoutOutlined, ExperimentOutlined, BlockOutlined, UserDeleteOutlined } from '@ant-design/icons';
-import BACKEND from '../../config/backend';
+import BACKEND from '../../../config/backend';
 import axios from 'axios';
-import Sessions from '../../utils/Sesions';
+import Sessions from '../../../utils/Sesions';
 import { useNavigate } from 'react-router-dom';
 
 const { Header, Content, Sider } = Layout;
 const { SubMenu } = Menu;
 
-const HomeStudents = () => {
+const HomeExperimentos = () => {
   // Estado para verificar si el usuario está logueado
   const [isLogged, setIsLogged] = useState(true);
   const navigate = useNavigate();
-
-  
 
   useEffect(() => {
     const validateSession = async () => {
@@ -48,11 +46,11 @@ const HomeStudents = () => {
       <Layout>
         {/* Sider */}
         <Sider width={250} className="site-layout-background">
-          <Menu mode="inline" defaultSelectedKeys={['1']} style={{ height: '100%', borderRight: 0, userSelect: 'none', paddingLeft: '10px', paddingRight: '10px', paddingTop: '10px' }}>
+          <Menu mode="inline" defaultSelectedKeys={['2']} style={{ height: '100%', borderRight: 0, userSelect: 'none', paddingLeft: '10px', paddingRight: '10px', paddingTop: '10px' }}>
             <Menu.Item key="1" icon={<HomeOutlined />}>
               Inicio
             </Menu.Item>
-            <Menu.Item key="2" icon={<ExperimentOutlined />} onClick={() => navigate('/students/experiments')}>
+            <Menu.Item key="2" icon={<ExperimentOutlined />}>
               Mis experimentos
             </Menu.Item>
             <Menu.Item key="3" icon={<UserOutlined />}>
@@ -74,8 +72,9 @@ const HomeStudents = () => {
         {/* Content */}
         <Layout style={{ padding: '0 24px 24px' }}>
           <Breadcrumb style={{ margin: '16px 0' }}>
-            <Breadcrumb.Item>Inicio</Breadcrumb.Item>
-            <Breadcrumb.Item>Tablero</Breadcrumb.Item>
+          <Breadcrumb.Item>Inicio</Breadcrumb.Item>
+            <Breadcrumb.Item>Mis experimentos</Breadcrumb.Item>
+            
           </Breadcrumb>
           <Content
             style={{
@@ -86,8 +85,8 @@ const HomeStudents = () => {
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <h1>Bienvenido ESTUDIANTE</h1>
-              <Button type="primary">Nuevo Evento</Button>
+              <h1>Mis experimentos</h1>
+              <Button type="primary" onClick={() => navigate('/students/experiments/add')}>+ Agregar</Button>
             </div>
             <div style={{ marginTop: '20px' }}>
               <p>
@@ -103,4 +102,4 @@ const HomeStudents = () => {
   );
 };
 
-export default HomeStudents;
+export default HomeExperimentos;
