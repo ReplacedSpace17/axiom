@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Layout, Modal, Steps, Select, List, Menu, Breadcrumb, Button, Form, Input, Upload, } from 'antd';
+import { Layout, Modal, Steps, Select, List, Menu, Breadcrumb, Button, Form, Input, Upload, Spin} from 'antd';
 import { HomeOutlined, UserOutlined, SearchOutlined, LogoutOutlined, ExperimentOutlined, BlockOutlined, UserDeleteOutlined, DatabaseOutlined,
     DeleteOutlined, InboxOutlined
 } from '@ant-design/icons';
 import BACKEND from '../../../../config/backend';
-import axios from 'axios';
 import Sessions from '../../../../utils/Sesions';
 import { useNavigate } from 'react-router-dom';
 import Confetti from 'react-confetti';
@@ -18,6 +17,7 @@ const { Dragger } = Upload;
 const Add_Exp = () => {
     //instanciar el modelo
     const expModel = new AddExpModel();
+    const [agregarExp, setAgregarExp] = useState(true);
     // Estado para verificar si el usuario está logueado
     const [isLogged, setIsLogged] = useState(true);
     const navigate = useNavigate();
@@ -25,7 +25,7 @@ const Add_Exp = () => {
     const [showConfetti, setShowConfetti] = useState(false);
     const [recycle, setRecycle] = useState(true);
 
-
+  const [loading, setLoading] = useState(false);
     //Función para finalizar la configuración
     const handleShowConfetti = () => {
         setShowConfetti(true);
@@ -56,9 +56,14 @@ const Add_Exp = () => {
     //Función para retroceder en el formulario
     const prev = () => setCurrentStep(currentStep - 1);
     //Función para finalizar la configuración
-    const finish = () => {
+    const finish = async () => {
         //message.success('Configuration Complete!');
-        handleShowConfetti();
+       await handleShowConfetti();
+       //esperar 3 segundos
+        setTimeout(() => {
+          navigate('/students/experiments');
+        }
+        , 2000);
     };
 
     useEffect(() => {
@@ -80,21 +85,6 @@ const Add_Exp = () => {
         validateSession(); // Llamar a la función asíncrona
     }, [navigate]);
 
-
-    //-------------------------------------------------
-    //serverName
-    const [serverName, setServerName] = useState('');
-    const [databaseName, setDatabaseName] = useState('');
-    const [portDb, setPortDB] = useState('');
-    const [userDb, setUserDB] = useState('');
-    const [passwordDb, setPasswordDB] = useState('');
-    const [connectionStatus, setConnectionStatus] = useState(false);
-
-    const testConnectionDB = async () => {
-    };
-    const writeConfigDB = async () => {
-    };
-
     //###################################################################################### FUNCTIONS DE CADA ETAPA
     //--------------------- ETAPA 1: Descripción del experimento ---------------------
     //titulo, descripcion, tags[], references_cid[]
@@ -106,34 +96,48 @@ const Add_Exp = () => {
     const [titleReference, setTitleReference] = useState('');
     //buscar que exista el CID de referencia
     const searchReferenceCID = async (cid) => {
+      setLoading(true);
+      //hacer peticion a /students/experiments/get/:id para buscar la informacion del experimento
+      //si el resultado es true, entonces agregar el CID a la lista de referenceCID
+      await fetch(`${BACKEND}/students/experiments/get/${cid}`)
+      .then((response) => response.json())
+      .then(async (data) => {
+        //console.log(data);
+        if(data.status === 210){
+          setLoading(false);
+          Modal.error({
+            title: 'CID no encontrado',
+            content: 'El CID de referencia no fue encontrado',
+            centered: true,
+        });
+
+        }
+        else{
+        if(data.status === 201){
+          setLoading(false);
+          await setTitleReference(data.title);
+          Modal.success({
+              title: 'CID encontrado',
+              content: 'Agregando el experimento de referencia: ' + titleReference,
+              centered: true,
+          });
+          setReferenceCID([...referenceCID, cid]);
+        }
+      }
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+      });
+/*
        const resultado = true;
        if (resultado) {
         //obtener el titulo del experimento
-        await setTitleReference('Titulo del experimento');
-        Modal.success({
-            title: 'CID encontrado',
-            content: 'Agregando el eexperimento de referencia: ' + titleReference,
-            centered: true,
-        });
-        setReferenceCID([...referenceCID, cid]);
+        
        }
          else {
-          Modal.error({
-                title: 'CID no encontrado',
-                content: 'El CID de referencia no fue encontrado',
-                centered: true,
-            });
-        }
+        
+        }*/
     };
-
-    //guardar datos del experimento en el modelo
-    const saveDescription = () => {
-        expModel.setTitle(title);
-        expModel.setDescription(description);
-        expModel.setTags(tags);
-        expModel.setReferenceCID(referenceCID);
-        next();
-    }
 
     //--------------------- ETAPA 2: Carga de archivos ---------------------
     const [files, setFiles] = useState([]);
@@ -145,279 +149,161 @@ const Add_Exp = () => {
         setFiles(files.filter((f) => f.uid !== file.uid));
     };
 
-    const saveFilesToModel = () => {
-        //guardalos en el model
-        expModel.setFiles(files);
-        next();
-    };
+    //post a backend
+ // Enviar los archivos al backend
+const sendToBackend = async () => {
+    try {
+      // Crear un FormData para enviar los archivos y otros datos
+      const formData = new FormData();
+      formData.append('experiment', JSON.stringify(expModel)); // Enviar el JSON del experimento
+  
+      // Agregar los archivos al FormData
+      expModel.files.forEach((file) => {
+        if (file.originFileObj) {
+          //console.log("Archivo preparado para enviar:", file.originFileObj.name);  // Verifica el nombre del archivo aquí
+          formData.append('files', file.originFileObj); // Asegúrate de usar originFileObj
+        }
+      });
+  
+      // Hacer la solicitud al backend
+      const response = await fetch(`${BACKEND}/students/experiments/add`, {
+        method: 'POST',
+        body: formData
+      });
+  
+      // Comprobar si la respuesta es correcta
+      if (response.ok) {
+        const responseData = await response.json();
+        //console.log("Response:", responseData);
+        alert("Archivos enviados correctamente.");
+      } else {
+        throw new Error('Error al enviar los archivos');
+      }
+    } catch (error) {
+      console.error("Error al cargar los archivos:", error);
+      alert("Error al cargar los archivos.");
+    }
+  };
 
         //--------------------- ETAPA 3: Autores ---------------------
-        
-        //nombre, orci y institucion
-        const [nombre, setNombre] = useState('');
-        const [orcid, setOrcid] = useState('');
-        const [institucion, setInstitucion] = useState('');
 
         const [authors, setAuthors] = useState([
             {
-              name: "Prof. Bob Johnson",
+              name: "Javier Guitierrez Ramirez",
               orcid: "0000-0002-3456-7890",
-              affiliation: "Decentralized Tech Institute",
+              affiliation: "Tecnológico Nacional de México",
             },
           ]);
           
           const saveAuthors = async () => {
+            //establecer el loading
+            setLoading(true);
+            expModel.setTitle(title);
             expModel.setAuthors(authors);
-            await finish();
-            //timer para redirigir
-            setTimeout(() => {
-                navigate('/students/experiments');
+            expModel.setDescription(description);
+            expModel.setTags(tags);
+            expModel.setReferenceCID(referenceCID);
+            expModel.setFiles(files);
+            expModel.setAuthors(authors);
+           
+            const datos = expModel.toJSON();
+            //console.log('Experimento:', JSON);
+          
+            try {
+              const formData = new FormData();
+              formData.append('experiment', datos); // Enviar el JSON del experimento
+          
+              // Agregar los archivos al FormData
+              expModel.files.forEach((file) => {
+                if (file.originFileObj) {
+                  //console.log("Archivo preparado para enviar:", file.originFileObj.name);
+                  formData.append('files', file.originFileObj); 
+                }
+              });
+          
+              // Hacer la solicitud al backend
+              const response = await fetch(`${BACKEND}/students/experiments/add`, {
+                method: 'POST',
+                body: formData,
+              });
+          
+              const responseData = await response.json();
+              //console.log("DATA DE BLOCKCHAIN:", responseData);
+              setLoading(false);
+              // 📌 Manejo de respuestas según el status
+              if (responseData.status === 200) {
+                //verificar que responseData.iscomplited sea true
+                if(responseData.iscomplited){
+                  setAgregarExp(false);
+                 
+                  //alert(`✅ Transacción completada con éxito.\n\n📜 Hash: ${responseData.transactionHash}\n📦 IPFS: ${responseData.url_ipfs}\n⛽ Gas usado: ${responseData.gasUsed}\n💰 Costo: ${responseData.costInMatic} MATIC (${responseData.costInMxn} MXN)`);
+                  Modal.success({
+                    title: '✅ Transacción completada con éxito',
+                    centered: true,
+                    content: (
+                      <div>
+                        <p><strong>📜 Hash:</strong> {responseData.transactionHash}</p>
+                        <p><strong>📦 IPFS:</strong> <a href={responseData.url_ipfs} target="_blank" rel="noopener noreferrer">{responseData.url_ipfs}</a></p>
+                        <p><strong>⛽ Gas usado:</strong> {responseData.gasUsed}</p>
+                        <p><strong>💰 Costo:</strong> {responseData.costInMatic} MATIC ({responseData.costInMxn} MXN)</p>
+                      </div>
+                    ),
+                    footer: (
+                      <>
+                        <Button
+  type="primary"
+  style={{ marginTop: '15px', marginRight: '10px' }}
+  onClick={async () => {
+    await finish();  // Espera a que la función finish() termine
+    Modal.destroyAll();  // Luego cierra el modal
+  }}
+>
+  OK
+</Button>
+
+                        <Button onClick={() => console.log('Salir')}>Salir</Button>
+                      </>
+                    ),
+                  });
+                  
+                }
+                else{
+                  Modal.error({
+                    title: 'Transacción no completada',
+                    content: responseData.message,
+                    centered: true,
+                    footer: (
+                      <>
+                        <Button type="primary" style={{ marginTop: '15px', marginRight:'10px' }} onClick={() => Modal.destroyAll()}>
+                          OK
+                        </Button>
+                        <Button onClick={() => console.log('Salir')}>Salir</Button>
+                      </>
+                    ),
+                  });
+                  //alert(`⚠️ ${responseData.message}`);
+                }
+                
+              } else if (responseData.status === 500) {
+                alert(`⚠️ Ocurrio un error: ${responseData.error}`);
+              } else {
+                alert("❌ Error inesperado al enviar los archivos.");
+              }
+          
+            } catch (error) {
+              console.error("Error al cargar los archivos:", error);
+              //alert("❌ Error al cargar los archivos.");
             }
-            , 3000);
           };
+          
 
     //######################################################################################
     const steps = [
-        {
-            title: 'Autores',
-            content: (
-              <Form
-                form={form}
-                layout="vertical"
-                style={{
-                  width: '90%',
-                  margin: '0 auto',
-                  justifyContent: 'center',
-                  minHeight: '500px',
-                  display: 'flex', // Establecer flexbox para alinear los elementos
-                  flexDirection: 'column', // Alinear los elementos de arriba hacia abajo
-                }}
-              >
-                <div style={{ marginBottom: '20px', textAlign: 'center' }}>
-                  <h2 style={{ marginBottom: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <UserOutlined style={{ fontSize: '24px', marginRight: '8px' }} />
-                    Autores del Experimento
-                  </h2>
-                  <div
-                    style={{
-                      borderTop: '1px solid #b9b9b9',
-                      marginTop: '10px',
-                      width: '100%',
-                      marginBottom: '0px',
-                    }}
-                  ></div>
-                  <p style={{ marginBottom: '0', color: '#272727' }}>
-                    Completa los siguientes campos.
-                  </p>
-                </div>
-          
-                {/* Lista de autores */}
-                <div style={{ marginBottom: '20px' }}>
-                  <h3>Autores Registrados:</h3>
-                  <List
-                    bordered
-                    dataSource={authors}
-                    style={{
-                      marginTop: '20px',
-                      marginBottom: '20px',
-                      height: '150px', // Establecer un alto fijo
-                      overflowY: 'auto', // Activar desplazamiento vertical
-                    }}
-                    renderItem={(author, index) => (
-                      <List.Item
-                        key={index}
-                        style={{
-                          transition: 'background-color 0.3s ease', // Transición suave
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                      >
-                        <div>
-                          <strong>{author.name}</strong> - ORCID: {author.orcid} - {author.affiliation}
-                        </div>
-                      </List.Item>
-                    )}
-                  />
-                </div>
-          
-                {/* Botón para agregar autor */}
-                <Button
-                  type="dashed"
-                  onClick={() => {
-                    
-
-                    Modal.confirm({
-                        title: "Agregar Nuevo Autor",
-                        content: (
-                          <Form layout="vertical" form={form}>
-                            <Form.Item
-                              label="Nombre del autor"
-                              name="authorName"
-                              rules={[{ required: true, message: "Por favor ingresa el nombre del autor" }]}
-                            >
-                              <Input placeholder="Nombre completo del autor" />
-                            </Form.Item>
-                    
-                            <Form.Item
-                              label="ORCID"
-                              name="orcid"
-                              rules={[{ required: true, message: "Por favor ingresa el ORCID del autor" }]}
-                            >
-                              <Input placeholder="ORCID del autor" />
-                            </Form.Item>
-                    
-                            <Form.Item
-                              label="Institución"
-                              name="affiliation"
-                              rules={[{ required: true, message: "Por favor ingresa la institución del autor" }]}
-                            >
-                              <Input placeholder="Institución del autor" />
-                            </Form.Item>
-                          </Form>
-                        ),
-                        centered: true,
-                        onOk: async () => {
-                          try {
-                            await form.validateFields(); // Valida el formulario antes de obtener valores
-                            const values = form.getFieldsValue(); // Obtiene los valores actuales del formulario
-                    
-                            const newAuthor = {
-                              name: values.authorName,
-                              orcid: values.orcid,
-                              affiliation: values.affiliation,
-                            };
-                    
-                            console.log("Nuevo autor:", newAuthor);
-                            setAuthors((prevAuthors) => [...prevAuthors, newAuthor]); // Agrega el nuevo autor correctamente
-                            form.resetFields(); // Limpia el formulario después de agregar
-                          } catch (error) {
-                            console.error("Error al agregar autor:", error);
-                          }
-                        },
-                        okText: "Agregar",
-                        cancelText: "Cancelar",
-                      });
-
-                  }}
-                >
-                  Agregar Autor
-                </Button>
-          
-                {/* Botón de continuar, alineado al fondo */}
-                <div style={{ marginTop: 'auto', marginBottom: '20px', width: '100%' }}>
-                  <Button type="primary" onClick={saveAuthors} style={{ width: '100%' }}>
-                    Guardar Experimento
-                  </Button>
-                </div>
-              </Form>
-            ),
-          }
-          ,
-        
-        
-        
-
-        { //-------------------------------------------- Archivos del experimento--------------------------------------------
-            title: 'Archivos del Experimento',
-            content: (
-                <Form form={form} layout="vertical" style={{ width: '90%', margin: '0 auto', justifyContent: 'center', minHeight: '500px' }}>
-                <div style={{ marginBottom: '20px', textAlign: 'center' }}>
-                    <h2 style={{ marginBottom: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                        <ExperimentOutlined style={{ fontSize: '24px', marginRight: '8px' }} />
-                        Archivos del Experimento
-                    </h2>
-                    <div
-                        style={{
-                            borderTop: '1px solid #b9b9b9',
-                            marginTop: '10px',
-                            width: '100%',
-                            marginBottom: '0px',
-                        }}
-                    ></div>
-                    <p style={{ marginBottom: '0', color: '#272727' }}>
-                        Agrega los archivos que generaste en el experimento, reportes, imágenes, etc.
-                    </p>
-                </div>
-    
-                {/* Formulario */}
-               
-    
-                {/* Carga de archivos */}
-                <Form.Item
-                    label="Archivos del Experimento"
-                    name="files"
-                    rules={[{ required: true, message: 'Por favor agrega al menos un archivo' }]}
-                >
-
-<Dragger
-    multiple
-    height={180}
-    fileList={files}
-    onChange={handleFileChange}
-    onRemove={handleRemove}
-    beforeUpload={() => false} // Previene la carga automática
-    showUploadList={false} // Desactiva la visualización de la lista de archivos
-    style={{
-        
-        border: '2px dashed #1890ff',
-        borderRadius: '8px',
-        display: 'flex',
-        alignContent: 'center',
-        justifyContent: 'center',
-        height: '100px',
-    }}
->
-    <p className="ant-upload-drag-icon">
-        <InboxOutlined />
-    </p>
-    <p className="ant-upload-text">Haz clic o arrastra archivos aquí para cargarlos</p>
-</Dragger>
-
-    
-                    {/* Contenedor para la lista de archivos con altura máxima y scroll */}
-                    <div
-                        style={{
-                            height: '130px', // Altura máxima
-                            overflowY: 'auto', // Scroll vertical
-                            border: '1px solid #d9d9d9',
-                            borderRadius: '8px',
-                            padding: '10px',
-                            marginTop: '10px',
-                        }}
-                    >
-                        {files.map((file) => (
-                            <div
-                                key={file.uid}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    padding: '3px',
-                                    borderBottom: '1px solid #f0f0f0',
-                                }}
-                            >
-                                <span>{file.name}</span>
-                                <Button
-                                    type="text"
-                                    danger
-                                    icon={<DeleteOutlined />}
-                                    onClick={() => handleRemove(file)}
-                                />
-                            </div>
-                        ))}
-                    </div>
-                </Form.Item>
-    
-                <Button type="primary" onClick={saveFilesToModel} style={{ marginTop: '20px' }}>
-                    Coninuar registro
-                </Button>
-            </Form>
-            ),
-        },
-        
        { //-------------------------------------------- Descripcion de experimento--------------------------------------------
     title: 'Información del Experimento',
     content: (
+      <Spin spinning={loading} tip="Cargando...">
+        
         <Form form={form} layout="vertical" style={{ width: '90%', margin: '0 auto', justifyContent: 'center', minHeight: '500px' }}>
             <div style={{ marginBottom: '20px', textAlign: 'center' }}>
                 <h2 style={{ marginBottom: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -436,7 +322,6 @@ const Add_Exp = () => {
                     Completa los siguientes campos.
                 </p>
             </div>
-
             {/* Formulario */}
             <Form.Item
                 label="Título del experimento"
@@ -448,7 +333,6 @@ const Add_Exp = () => {
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Ingresa el título del experimento" />
             </Form.Item>
-
             <Form.Item
     label="Descripción del experimento"
     name="description"
@@ -462,8 +346,6 @@ const Add_Exp = () => {
         style={{ maxHeight: '30px', overflow: 'hidden' }} // Evita expansión
     />
 </Form.Item>
-
-
             <Form.Item
                 label="Etiquetas"
                 name="tags"
@@ -476,7 +358,6 @@ const Add_Exp = () => {
                     placeholder="Añade etiquetas"
                 />
             </Form.Item>
-
           <Form.Item label="CID de Referencia" name="referenceCID">
     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
         <Select
@@ -502,6 +383,7 @@ const Add_Exp = () => {
                     onOk: () => {
                         if (newCID.trim()) {
                             searchReferenceCID(newCID);
+
                         }
                     },
                     okText: "Agregar",
@@ -513,19 +395,247 @@ const Add_Exp = () => {
         </Button>
     </div>
 </Form.Item>
-
-
-            <Button type="primary" onClick={saveDescription}>
+            <Button type="primary" onClick={next}>
                 Guardar Experimento
             </Button>
         </Form>
+        </Spin>
     ),
 },
+{ //-------------------------------------------- Archivos del experimento--------------------------------------------
+    title: 'Archivos del Experimento',
+    content: (
+        <Form form={form} layout="vertical" style={{ width: '90%', margin: '0 auto', justifyContent: 'center', minHeight: '500px' }}>
+        <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+            <h2 style={{ marginBottom: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <ExperimentOutlined style={{ fontSize: '24px', marginRight: '8px' }} />
+                Archivos del Experimento
+            </h2>
+            <div
+                style={{
+                    borderTop: '1px solid #b9b9b9',
+                    marginTop: '10px',
+                    width: '100%',
+                    marginBottom: '0px',
+                }}
+            ></div>
+            <p style={{ marginBottom: '0', color: '#272727' }}>
+                Agrega los archivos que generaste en el experimento, reportes, imágenes, etc.
+            </p>
+        </div>
+        {/* Carga de archivos */}
+        <Form.Item
+            label="Archivos del Experimento"
+            name="files"
+            
+        >
+<Dragger
+multiple
+height={180}
+fileList={files}
+onChange={handleFileChange}
+onRemove={handleRemove}
+beforeUpload={() => false} // Previene la carga automática
+showUploadList={false} // Desactiva la visualización de la lista de archivos
+style={{
+border: '2px dashed #1890ff',
+borderRadius: '8px',
+display: 'flex',
+alignContent: 'center',
+justifyContent: 'center',
+height: '100px',
+}}
+>
+<p className="ant-upload-drag-icon">
+<InboxOutlined />
+</p>
+<p className="ant-upload-text">Haz clic o arrastra archivos aquí para cargarlos</p>
+</Dragger>
+            {/* Contenedor para la lista de archivos con altura máxima y scroll */}
+            <div
+                style={{
+                    height: '130px', // Altura máxima
+                    overflowY: 'auto', // Scroll vertical
+                    border: '1px solid #d9d9d9',
+                    borderRadius: '8px',
+                    padding: '10px',
+                    marginTop: '10px',
+                }}
+            >
+                {files.map((file) => (
+                    <div
+                        key={file.uid}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '3px',
+                            borderBottom: '1px solid #f0f0f0',
+                        }}
+                    >
+                        <span>{file.name}</span>
+                        <Button
+                            type="text"
+                            danger
+                            icon={<DeleteOutlined />}
+                            onClick={() => handleRemove(file)}
+                        />
+                    </div>
+                ))}
+            </div>
+        </Form.Item>
+        <Button type="primary" onClick={next} style={{ marginTop: '20px' }}>
+            Coninuar registro
+        </Button>
+    </Form>
+    ),
+},
+{
+    title: 'Autores',
+    content: (
+      <Spin spinning={loading} tip="Cargando...">
+      <Form
+        form={form}
+        layout="vertical"
+        style={{
+          width: '90%',
+          margin: '0 auto',
+          justifyContent: 'center',
+          minHeight: '500px',
+          display: 'flex', // Establecer flexbox para alinear los elementos
+          flexDirection: 'column', // Alinear los elementos de arriba hacia abajo
+        }}
+      >
+        <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+          <h2 style={{ marginBottom: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <UserOutlined style={{ fontSize: '24px', marginRight: '8px' }} />
+            Autores del Experimento
+          </h2>
+          <div
+            style={{
+              borderTop: '1px solid #b9b9b9',
+              marginTop: '10px',
+              width: '100%',
+              marginBottom: '0px',
+            }}
+          ></div>
+          <p style={{ marginBottom: '0', color: '#272727' }}>
+            Completa los siguientes campos.
+          </p>
+        </div>
+  
+        {/* Lista de autores */}
+        <div style={{ marginBottom: '20px' }}>
+          <h3>Autores Registrados:</h3>
+          <List
+            bordered
+            dataSource={authors}
+            style={{
+              marginTop: '20px',
+              marginBottom: '20px',
+              height: '150px', // Establecer un alto fijo
+              overflowY: 'auto', // Activar desplazamiento vertical
+            }}
+            renderItem={(author, index) => (
+              <List.Item
+                key={index}
+                style={{
+                  transition: 'background-color 0.3s ease', // Transición suave
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              >
+                <div style={{cursor: 'pointer'}} onClick={() => 
+                    Modal.info({
+                        title: 'Información del Autor',
+                        content: (
+                            <div>
+                                <p><strong>Nombre:</strong> {author.name}</p>
+                                <p><strong>ORCID:</strong> {author.orcid}</p>
+                                <p><strong>Institución:</strong> {author.affiliation}</p>
+                            </div>
+                        ),
+                        centered: true,
+                    })
+                }>
+                  <strong>{author.name}</strong>
+                </div>
+              </List.Item>
+            )}
+          />
+        </div>
+  
+        {/* Botón para agregar autor */}
+        <Button
+          type="dashed"
+          onClick={() => {
+            Modal.confirm({
+                title: "Agregar Nuevo Autor",
+                content: (
+                  <Form layout="vertical" form={form}>
+                    <Form.Item
+                      label="Nombre del autor"
+                      name="authorName"
+                      rules={[{ required: true, message: "Por favor ingresa el nombre del autor" }]}
+                    >
+                      <Input placeholder="Nombre completo del autor" />
+                    </Form.Item>
+            
+                    <Form.Item
+                      label="ORCID"
+                      name="orcid"
+                      rules={[{ required: true, message: "Por favor ingresa el ORCID del autor" }]}
+                    >
+                      <Input placeholder="ORCID del autor" />
+                    </Form.Item>
+            
+                    <Form.Item
+                      label="Institución"
+                      name="affiliation"
+                      rules={[{ required: true, message: "Por favor ingresa la institución del autor" }]}
+                    >
+                      <Input placeholder="Institución del autor" />
+                    </Form.Item>
+                  </Form>
+                ),
+                centered: true,
+                onOk: async () => {
+                  try {
+                    await form.validateFields(); // Valida el formulario antes de obtener valores
+                    const values = form.getFieldsValue(); // Obtiene los valores actuales del formulario
+            
+                    const newAuthor = {
+                      name: values.authorName,
+                      orcid: values.orcid,
+                      affiliation: values.affiliation,
+                    };
+                    //console.log("Nuevo autor:", newAuthor);
+                    setAuthors((prevAuthors) => [...prevAuthors, newAuthor]); // Agrega el nuevo autor correctamente
+                    form.resetFields(); // Limpia el formulario después de agregar
+                  } catch (error) {
+                    console.error("Error al agregar autor:", error);
+                  }
+                },
+                okText: "Agregar",
+                cancelText: "Cancelar",
+              });
 
+          }}
+        >
+          Agregar Autor
+        </Button>
 
+        {/* Botón de continuar, alineado al fondo */}
+        <div style={{ marginTop: 'auto', marginBottom: '20px', width: '100%' }}>
+          <Button type="primary" disabled={!agregarExp} onClick={saveAuthors} style={{ width: '100%' }}>
+            Guardar Experimento
+          </Button>
+        </div>
         
-
-
+      </Form>
+      </Spin>
+    ),
+  }
     ];
 
     return (
@@ -595,7 +705,7 @@ const Add_Exp = () => {
                                     gravity={0.2} // Gravedad para caída más lenta
                                 />
                             )}
-
+ 
                         </Layout>
                    
                 </Layout>

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Layout, Menu, Breadcrumb, Button } from 'antd';
-import { HomeOutlined, UserOutlined, SearchOutlined, LogoutOutlined, ExperimentOutlined, BlockOutlined, UserDeleteOutlined } from '@ant-design/icons';
+import { HomeOutlined, UserOutlined, SearchOutlined, LogoutOutlined, ExperimentOutlined, BlockOutlined, UserDeleteOutlined ,
+  BranchesOutlined
+} from '@ant-design/icons';
 import BACKEND from '../../config/backend';
 import axios from 'axios';
 import Sessions from '../../utils/Sesions';
@@ -63,6 +65,7 @@ const HomeStudents = () => {
             <SubMenu key="sub4" icon={<BlockOutlined />} title="Blockchain">
               <Menu.Item key="4-1" icon={<ExperimentOutlined />}>Experimentos</Menu.Item>
               <Menu.Item key="4-2" icon={<UserDeleteOutlined />}>Autores</Menu.Item>
+              <Menu.Item key="4-3" icon={<BranchesOutlined />}>Trazabilidad</Menu.Item>
             </SubMenu>
 
             <Menu.Item key="6" icon={<LogoutOutlined />}>

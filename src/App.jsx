@@ -25,7 +25,8 @@ import Experimentos_home from './views/Admin/Experimentos/Experimentos_home';
 import HomeStudents from './views/Students/Home_students';
 import HomeExperimentos from './views/Students/Mis_experimentos/Experimentos';
 import Add_Exp from './views/Students/Mis_experimentos/Agregar_EXP/AgregarExp';
-
+import Blockchain_Trazabilidad from './views/Students/Blockchain/Blockchain_trazabilidad';
+import Graph3D from './views/Students/Blockchain/Example';
 function App() {
   const [count, setCount] = useState(0);
 
@@ -50,6 +51,9 @@ function App() {
         <Route path="/institucion" element={<Institucion_home />} />
 
         <Route path="/experimentos" element={<Experimentos_home />} />
+
+        <Route path="/students/blockchain/trazabilidad" element={<Blockchain_Trazabilidad />} />
+        <Route path="/graph" element={<Graph3D />} />
         
       </Routes>
     </Router>
