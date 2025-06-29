@@ -210,9 +210,9 @@ const LoginForm = () => {
       particlesLoaded={particlesLoaded}
       options={options}
     />
-  ), [options]);  // Dependiendo de `options`, pero no de `username` o `password`
+  ), [options]);  
 
-
+  
   return (
     <Layout style={{
       width: '100vw', height: '100vh', margin: '-8px', padding: '0px', backgroundColor: 'none',

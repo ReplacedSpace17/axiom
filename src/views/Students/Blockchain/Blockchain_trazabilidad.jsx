@@ -89,12 +89,14 @@ const Blockchain_Trazabilidad = () => {
       id: exp.cid,
       name: exp.title,
       color: "#1f77b4",
+      description: exp.description,
+      authors: exp.authors,
+      tags: exp.tags,
+      date: exp.date,
+      host: exp.host,
     })),
     links: experiments.flatMap((exp) =>
-      exp.referencesCid.map((refCid) => ({
-        source: exp.cid,
-        target: refCid,
-      }))
+      exp.referencesCid.map((refCid) => ({ source: exp.cid, target: refCid }))
     ),
   };
 
@@ -128,10 +130,7 @@ const Blockchain_Trazabilidad = () => {
 
           <Spin spinning={loading} tip="Cargando...">
             <Content style={{ padding: 24, margin: 0, minHeight: 280, backgroundColor: 'white' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <h1>Trazabilidad de experimentos</h1>
-                <Button type="primary" onClick={() => navigate('/students/experiments/add')}>+ Agregar</Button>
-              </div>
+             
 
               <Search
                 placeholder="Ingresa el CID del experimento aqui"
@@ -142,7 +141,7 @@ const Blockchain_Trazabilidad = () => {
                 onClear={() => setLoading(false)}
               />
 
-              <div style={{ position: "relative" }}>
+              <div style={{ position: "relative",  height: "auto"}}>
                 <Button
                   style={{ position: "absolute", top: 10, left: 10, zIndex: 10 }}
                   onClick={handleCenterView}
@@ -150,51 +149,85 @@ const Blockchain_Trazabilidad = () => {
                   Centrar
                 </Button>
                 <ForceGraph3D
-                  ref={fgRef}
-                  graphData={graphData}
-                  nodeAutoColorBy="id"
-                  linkDirectionalArrowLength={5}
-                  d3Force="charge"
-                  d3ForceStrength={-500}
-                  nodeThreeObject={(node) => {
-                    const group = new THREE.Group();
+  width={1300}
+  height={650}
+  backgroundColor="#f5f5f5" // Fondo claro
+  ref={fgRef}
+  graphData={graphData}
+  linkAutoColorBy={'#000000'}
+  linkWidth={1}
+  nodeAutoColorBy="id"
+  linkDirectionalArrowLength={7}
 
-                    const geometry = new THREE.SphereGeometry(5, 16, 16);
-                    const material = new THREE.MeshBasicMaterial({ color: node.color });
-                    const sphere = new THREE.Mesh(geometry, material);
-                    group.add(sphere);
+  d3Force="charge"
+  d3ForceStrength={-10000} // Aumenta la separación entre nodos
+  nodeThreeObject={(node) => {
+    const group = new THREE.Group();
 
-                    const sprite = new THREE.Sprite(
-                      new THREE.SpriteMaterial({
-                        map: new THREE.CanvasTexture(
-                          (() => {
-                            const canvas = document.createElement("canvas");
-                            const ctx = canvas.getContext("2d");
-                            canvas.width = 100;
-                            canvas.height = 50;
-                            ctx.fillStyle = "white";
-                            ctx.font = "14px Arial";
-                            ctx.fillText(node.name, 10, 40);
-                            return canvas;
-                          })()
-                        ),
-                      })
-                    );
-                    sprite.position.set(0, -8, 0);
-                    sprite.scale.set(10, 5, 1);
-                    group.add(sprite);
+    // Nodo en color gris
+    const geometry = new THREE.SphereGeometry(5, 16, 16);
+    const material = new THREE.MeshBasicMaterial({ color: "#808080" });
+    const sphere = new THREE.Mesh(geometry, material);
+    group.add(sphere);
 
-                    return group;
-                  }}
-                  onNodeClick={(node) => setSelectedNode(node)}
-                />
+    // Texto del nodo en negro y negrita
+    const sprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: new THREE.CanvasTexture(
+          (() => {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            canvas.width = 150;
+            canvas.height = 50;
+            ctx.fillStyle = "black"; // Texto en negro
+            ctx.font = "bold 14px Arial"; // Negrita
+            ctx.fillText(node.name, 10, 30);
+            return canvas;
+          })()
+        ),
+      })
+    );
+    sprite.position.set(0, -8, 0);
+    sprite.scale.set(15, 7, 1);
+    group.add(sprite);
+
+    return group;
+  }}
+  onNodeClick={(node) => {
+    console.log("Nodo seleccionado:", node);
+    setSelectedNode(node);
+  }}
+/>
+
+
                 <Modal
                   title={selectedNode?.name}
                   open={!!selectedNode}
                   onCancel={() => setSelectedNode(null)}
                   footer={null}
+                  centered={true}
                 >
-                  <p>{selectedNode?.id}</p>
+                  {selectedNode && (
+                    <div>
+                      <p><strong>CID:</strong> {selectedNode.id}</p>
+                      <p><strong>Descripción:</strong> {selectedNode.description}</p>
+                      <p><strong>Fecha:</strong> {selectedNode.date}</p>
+                      <p><strong>Autores:</strong></p>
+                      <ul>
+                        {selectedNode.authors.map((author, index) => (
+                          <li key={index}>{author.name} - {author.affiliation}</li>
+                        ))}
+                      </ul>
+                      <p><strong>Tags:</strong> {selectedNode.tags.join(', ')}</p>
+                      <Button onClick={() => handleCopy(selectedNode.id)}>Copiar CID</Button>
+                      <Button onClick={
+                        ()=>{
+                          //abrir ventana con los archivos del experimento de host
+                          window.open(selectedNode.host, "_blank");
+                        }
+                      }>Ver archivos</Button>
+                    </div>
+                  )}
                 </Modal>
               </div>
             </Content>

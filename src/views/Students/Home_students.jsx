@@ -42,7 +42,7 @@ const HomeStudents = () => {
       {/* Header */}
       <Header className="site-layout-background" style={{ padding: 0 }}>
         <div style={{ color: 'white', fontSize: '20px', textAlign: 'center' }}>
-          Mi Aplicación Super Usuario
+          Axiom
         </div>
       </Header>
 
@@ -89,14 +89,12 @@ const HomeStudents = () => {
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <h1>Bienvenido ESTUDIANTE</h1>
+              <h1>Bienvenido rol: estudiante</h1>
               <Button type="primary">Nuevo Evento</Button>
             </div>
             <div style={{ marginTop: '20px' }}>
               <p>
-                Este es el área de contenido principal donde puedes agregar
-                información, tarjetas o cualquier tipo de componente relevante para
-                tu aplicación.
+                Este es el área de contenido principal donde mostrar estadísticas, gráficas, etc.
               </p>
             </div>
           </Content>

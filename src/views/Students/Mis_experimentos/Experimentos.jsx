@@ -47,7 +47,7 @@ const HomeExperimentos = () => {
   return (
     <Layout style={{ minHeight: '100vh', margin: '-9.5px' }}>
       <Header className="site-layout-background" style={{ padding: 0, textAlign: 'center', color: 'white', fontSize: '20px' }}>
-        Mi Aplicación Super Usuario
+        Axiom
       </Header>
 
       <Layout>
